@@ -1,0 +1,33 @@
+# Backend
+be/vendor/
+be/.env
+be/.env.backup
+be/.env.production
+be/node_modules/
+be/storage/logs/*.log
+be/storage/framework/cache/*
+be/storage/framework/sessions/*
+be/storage/framework/views/*
+be/.php-cs-fixer.cache
+be/bootstrap/cache/*
+
+# Frontend
+fe/node_modules/
+fe/dist/
+fe/.env
+fe/.env.local
+fe/.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.DS_Store
+Thumbs.db
+
+# Temp files
+*.log
+*.tmp
+
+# Gemini
+.gemini/
