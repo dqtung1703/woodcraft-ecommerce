@@ -17,6 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('voucher_id')->nullable();
             $table->foreign('voucher_id')->references('id')->on('vouchers')->nullOnDelete();
             $table->string('status', 20)->default('pending');
+            $table->text('note')->nullable();
             // pending, confirmed, shipping, delivered, cancelled
             $table->timestamps();
         });

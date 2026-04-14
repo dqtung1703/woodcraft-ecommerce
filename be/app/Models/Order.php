@@ -14,7 +14,7 @@ class Order extends Model
 {
     protected $fillable = [
         'user_id', 'total_price', 'discount_amount',
-        'final_price', 'voucher_id', 'status',
+        'final_price', 'voucher_id', 'status', 'note',
     ];
 
     protected $casts = [
