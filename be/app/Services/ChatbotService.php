@@ -13,7 +13,7 @@ final class ChatbotService
 {
     private string $apiKey;
     private string $apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-    private string $model  = 'google/gemma-2-9b-it:free';
+    private string $model  = 'openai/gpt-oss-120b:free';
     private int $maxMessages = 10;
     private int $ttlMinutes = 30;
 
