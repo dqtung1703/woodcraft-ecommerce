@@ -31,6 +31,7 @@ Thumbs.db
 
 # Gemini
 .gemini/
+.claude/
 
 # Project Doc files (Untracked)
 SETUP_AND_DEPLOY.md
