@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\Review;
 use App\Models\User;
 use Carbon\CarbonPeriod;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -138,18 +137,6 @@ final class DashboardService
 
         return $query->orderByDesc('total_spent')->paginate($perPage);
     }
-
-    /**
-     * Quick reviews snapshot
-     */
-    public function getRecentReviews(int $limit = 5)
-    {
-        return Review::with(['user:id,name', 'product:id,name'])
-            ->latest()
-            ->limit($limit)
-            ->get();
-    }
-
     /**
      * Helper tính phần trăm tăng trưởng
      */

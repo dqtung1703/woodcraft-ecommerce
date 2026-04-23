@@ -6,12 +6,14 @@ use App\DTOs\Auth\LoginDTO;
 use App\DTOs\Auth\RegisterDTO;
 use App\DTOs\Auth\UpdateProfileDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Services\AuthService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
@@ -48,7 +50,7 @@ class AuthController extends Controller
         );
     }
 
-    public function updateProfile(UpdateProfileRequest $request)
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         $dto = UpdateProfileDTO::fromRequest($request->validated());
         $user = $this->authService->updateProfile($request->user()->id, $dto);
@@ -59,7 +61,19 @@ class AuthController extends Controller
         );
     }
 
-    public function logout(Request $request)
+    // UC05 — Đổi mật khẩu (endpoint riêng biệt)
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        $this->authService->changePassword(
+            $request->user(),
+            $request->validated('old_password'),
+            $request->validated('password')
+        );
+
+        return ApiResponse::message('Đổi mật khẩu thành công.');
+    }
+
+    public function logout(Request $request): JsonResponse
     {
         $this->authService->logout($request->user());
 

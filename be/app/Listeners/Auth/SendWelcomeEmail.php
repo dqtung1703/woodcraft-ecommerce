@@ -3,8 +3,10 @@
 namespace App\Listeners\Auth;
 
 use App\Events\Auth\UserRegistered;
+use App\Mail\WelcomeMail;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SendWelcomeEmail implements ShouldQueue
 {
@@ -12,9 +14,8 @@ class SendWelcomeEmail implements ShouldQueue
 
     public function handle(UserRegistered $event): void
     {
-        // TODO: implement Mailable khi có mail service
-        Log::info('Welcome email queued', ['user_id' => $event->user->id]);
-        // Mail::to($event->user->email)->send(new WelcomeMail($event->user));
+        Mail::to($event->user->email)->send(new WelcomeMail($event->user));
+        Log::info('Welcome email sent', ['user_id' => $event->user->id]);
     }
 
     public function failed(UserRegistered $event, \Throwable $exception): void

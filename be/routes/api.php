@@ -31,9 +31,10 @@ Route::prefix('v1')->group(function () {
     // ── Authenticated (120 req/min) ────────────────────────────────────────
     Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
 
-        Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/profile', [AuthController::class, 'profile']);
-        Route::put('/profile', [AuthController::class, 'updateProfile']);
+        Route::post('/logout',           [AuthController::class, 'logout']);
+        Route::get('/profile',           [AuthController::class, 'profile']);
+        Route::put('/profile',           [AuthController::class, 'updateProfile']);   // UC04
+        Route::put('/profile/password',  [AuthController::class, 'changePassword']);  // UC05
 
         Route::prefix('cart')->group(function () {
             Route::get('/',            [CartController::class, 'index']);

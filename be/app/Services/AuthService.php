@@ -37,12 +37,8 @@ class AuthService
 
             Log::info('User registered successfully', ['user_id' => $user->id]);
 
-            // Dispatch event via helper for listeners to pick up later (Phase 7)
-            if (class_exists(\App\Events\Auth\UserRegistered::class)) {
-                event(new \App\Events\Auth\UserRegistered($user));
-            } else {
-                event('user.registered', [$user]);
-            }
+            // Dispatch event
+            event(new \App\Events\Auth\UserRegistered($user));
 
             return [
                 'user'  => $user,
@@ -66,11 +62,7 @@ class AuthService
 
         Log::info('User logged in', ['user_id' => $user->id]);
 
-        if (class_exists(\App\Events\Auth\UserLoggedIn::class)) {
-            event(new \App\Events\Auth\UserLoggedIn($user));
-        } else {
-            event('user.logged_in', [$user]);
-        }
+        event(new \App\Events\Auth\UserLoggedIn($user));
 
         return [
             'user'  => $user,
@@ -78,11 +70,14 @@ class AuthService
         ];
     }
 
+    /**
+     * UC04 — Cập nhật hồ sơ cá nhân (tên, sđt, địa chỉ)
+     * Không xử lý đổi mật khẩu — dùng changePassword() riêng cho UC05.
+     */
     public function updateProfile(int $userId, UpdateProfileDTO $dto): User
     {
         $user = $this->userRepository->findById($userId);
         if (!$user) {
-            // Technically impossible if called from authenticated route, but safe guard.
             throw new \Illuminate\Database\Eloquent\ModelNotFoundException();
         }
 
@@ -100,18 +95,28 @@ class AuthService
             $dataToUpdate['address'] = $dto->address;
         }
 
-        if ($dto->newPassword !== null) {
-            if (!$dto->oldPassword || !Hash::check($dto->oldPassword, $user->password_hash)) {
-                throw AuthException::wrongPassword();
-            }
-            $dataToUpdate['password_hash'] = Hash::make($dto->newPassword);
-        }
-
         if (!empty($dataToUpdate)) {
             return $this->userRepository->update($user, $dataToUpdate);
         }
 
         return $user;
+    }
+
+    /**
+     * UC05 — Đổi mật khẩu (endpoint riêng: PUT /profile/password)
+     * Yêu cầu xác mịnh mật khẩu cũ trước khi đổi.
+     */
+    public function changePassword(User $user, string $oldPassword, string $newPassword): void
+    {
+        if (!Hash::check($oldPassword, $user->password_hash)) {
+            throw AuthException::wrongPassword();
+        }
+
+        $this->userRepository->update($user, [
+            'password_hash' => Hash::make($newPassword),
+        ]);
+
+        Log::info('User changed password', ['user_id' => $user->id]);
     }
 
     public function logout(User $user): void
