@@ -17,13 +17,15 @@ return new class extends Migration
     {
         // Bước 1: Xóa các dòng duplicate trước khi add unique constraint
         // (Cần thiết nếu DB đang có data để tránh lỗi "Duplicate entry" khi migrate)
-        DB::statement('
-            DELETE ci1 FROM cart_items ci1
-            INNER JOIN cart_items ci2
-            WHERE ci1.id > ci2.id
-              AND ci1.cart_id = ci2.cart_id
-              AND ci1.product_id = ci2.product_id
-        ');
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement('
+                DELETE ci1 FROM cart_items ci1
+                INNER JOIN cart_items ci2
+                WHERE ci1.id > ci2.id
+                  AND ci1.cart_id = ci2.cart_id
+                  AND ci1.product_id = ci2.product_id
+            ');
+        }
 
         Schema::table('cart_items', function (Blueprint $table) {
             $table->unique(['cart_id', 'product_id'], 'cart_items_cart_product_unique');

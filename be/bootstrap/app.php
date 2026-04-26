@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         
         $exceptions->render(function (\App\Exceptions\BusinessException $e, Request $request) {
-            return \App\Http\Responses\ApiResponse::error($e->getMessage(), $e->getCode(), null, $e->getErrorCode());
+            return \App\Http\Responses\ApiResponse::error($e->getMessage(), $e->getStatusCode(), null, $e->getErrorCode());
         });
 
         $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, Request $request) {
