@@ -15,6 +15,11 @@ class UserRepository implements UserRepositoryInterface
         return $this->model->where('email', $email)->first();
     }
 
+    public function findByGoogleId(string $googleId): ?User
+    {
+        return $this->model->where('google_id', $googleId)->first();
+    }
+
     public function findById(int $id): ?User
     {
         return $this->model->find($id);

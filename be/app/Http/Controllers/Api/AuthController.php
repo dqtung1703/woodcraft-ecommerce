@@ -7,6 +7,7 @@ use App\DTOs\Auth\RegisterDTO;
 use App\DTOs\Auth\UpdateProfileDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\GoogleLoginRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
@@ -71,6 +72,23 @@ class AuthController extends Controller
         );
 
         return ApiResponse::message('Đổi mật khẩu thành công.');
+    }
+
+    /**
+     * Google ID Token Flow
+     * POST /api/v1/auth/google
+     * Public route — không cần auth:sanctum
+     */
+    public function googleLogin(GoogleLoginRequest $request): JsonResponse
+    {
+        $result = $this->authService->loginWithGoogle(
+            $request->input('credential')
+        );
+
+        return ApiResponse::success([
+            'user'  => new UserResource($result['user']),
+            'token' => $result['token'],
+        ], 'Đăng nhập Google thành công');
     }
 
     public function logout(Request $request): JsonResponse
