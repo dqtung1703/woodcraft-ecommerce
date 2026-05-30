@@ -15,6 +15,8 @@ class Order extends Model
     protected $fillable = [
         'user_id', 'total_price', 'discount_amount',
         'final_price', 'voucher_id', 'status', 'note',
+        // Shipping snapshot — lưu tại thời điểm đặt hàng, không thay đổi khi user sửa profile
+        'shipping_name', 'shipping_phone', 'shipping_address',
     ];
 
     protected $casts = [
@@ -23,8 +25,9 @@ class Order extends Model
         'final_price'     => 'decimal:2',
     ];
 
-    // Status: pending, confirmed, shipping, delivered, cancelled
-    const STATUSES = ['pending', 'confirmed', 'shipping', 'delivered', 'cancelled'];
+    // Status: pending | confirmed | processing | shipping | delivered | cancelled
+    // processing: online payment thành công, đang chuẩn bị hàng (trước confirmed)
+    const STATUSES = ['pending', 'confirmed', 'processing', 'shipping', 'delivered', 'cancelled'];
 
     public function user(): BelongsTo
     {
