@@ -28,11 +28,12 @@ final class OrderService
 {
     // Định nghĩa các transition hợp lệ
     private const STATUS_TRANSITIONS = [
-        'pending'   => ['confirmed', 'cancelled'],
-        'confirmed' => ['shipping', 'cancelled'],
-        'shipping'  => ['delivered'],
-        'delivered' => [],
-        'cancelled' => [],
+        'pending'    => ['confirmed', 'cancelled'],
+        'processing' => ['confirmed', 'cancelled'], // Online payment thành công, chờ admin xác nhận
+        'confirmed'  => ['shipping', 'cancelled'],
+        'shipping'   => ['delivered'],
+        'delivered'  => [],
+        'cancelled'  => [],
     ];
 
     public function __construct(
@@ -60,9 +61,26 @@ final class OrderService
         return $order;
     }
 
-    public function getAllOrders(array $filters = []): LengthAwarePaginator
+    public function getAllOrders(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        return $this->orderRepository->paginateAll($filters);
+        return $this->orderRepository->paginateAll($filters, $perPage);
+    }
+
+    /**
+     * Admin: lấy bất kỳ đơn nào theo ID, không filter theo user
+     */
+    public function getOrderById(int $orderId): Order
+    {
+        $order = $this->orderRepository->findById(
+            $orderId,
+            ['items.product.images', 'payment', 'voucher', 'user']
+        );
+
+        if (!$order) {
+            throw OrderException::notFound($orderId);
+        }
+
+        return $order;
     }
 
     /**
@@ -93,15 +111,18 @@ final class OrderService
 
             $finalPrice = max(0, $totalPrice - $discountAmount);
 
-            // 4. Tạo đơn hàng
+            // 4. Tạo đơn hàng (có shipping snapshot)
             $order = $this->orderRepository->create([
-                'user_id'         => $dto->userId,
-                'total_price'     => $totalPrice,
-                'discount_amount' => $discountAmount,
-                'final_price'     => $finalPrice,
-                'voucher_id'      => $voucher?->id,
-                'status'          => 'pending',
-                'note'            => $dto->note,
+                'user_id'          => $dto->userId,
+                'total_price'      => $totalPrice,
+                'discount_amount'  => $discountAmount,
+                'final_price'      => $finalPrice,
+                'voucher_id'       => $voucher?->id,
+                'status'           => 'pending',
+                'note'             => $dto->note,
+                'shipping_name'    => $dto->shippingName,
+                'shipping_phone'   => $dto->shippingPhone,
+                'shipping_address' => $dto->shippingAddress,
             ]);
 
             // 5. Tạo order items + trừ tồn kho với pessimistic lock đúng cách (Chống Deadlock)
@@ -145,10 +166,17 @@ final class OrderService
             }
 
             // 6. Tạo payment record
+            // Phân biệt: unpaid = COD/banking, pending = online (chờ gateway xác nhận)
+            $isOnlinePayment = in_array($dto->paymentMethod, ['vnpay', 'momo']);
+
             Payment::create([
-                'order_id' => $order->id,
-                'method'   => $dto->paymentMethod,
-                'status'   => 'pending',
+                'order_id'       => $order->id,
+                'payment_method' => $dto->paymentMethod,
+                'payment_status' => $isOnlinePayment ? 'pending' : 'unpaid',
+                'amount'         => $finalPrice,
+                'expired_at'     => $isOnlinePayment
+                    ? now()->addMinutes(config('payment.' . $dto->paymentMethod . '.expire_minutes', 15))
+                    : null,
             ]);
 
             // 7. Ghi lại voucher usage + tăng used_count
@@ -163,17 +191,23 @@ final class OrderService
             }
 
             // 8. Xóa giỏ hàng
-            $cart->items()->delete();
+            // Online payment: GIỬ cart — FE sẽ clearCart() sau khi payment_status = 'paid'
+            // COD/banking: Xóa luôn
+            if (!$isOnlinePayment) {
+                $cart->items()->delete();
+            }
 
             // 9. Dispatch event
             event(new OrderPlaced($order));
 
             Log::info('Order placed successfully', [
-                'order_id'    => $order->id,
-                'user_id'     => $dto->userId,
-                'total_price' => $totalPrice,
-                'final_price' => $finalPrice,
-                'voucher'     => $voucher?->code,
+                'order_id'       => $order->id,
+                'user_id'        => $dto->userId,
+                'total_price'    => $totalPrice,
+                'final_price'    => $finalPrice,
+                'payment_method' => $dto->paymentMethod,
+                'is_online'      => $isOnlinePayment,
+                'voucher'        => $voucher?->code,
             ]);
 
             return $order->load(['items.product', 'payment', 'voucher']);
@@ -181,7 +215,10 @@ final class OrderService
     }
 
     /**
-     * User tự hủy đơn (chỉ hủy được khi đang pending)
+     * User tự hủy đơn — điểm hủy duy nhất trong hệ thống.
+     * Áp dụng cho mọi payment method khi order.status = 'pending'.
+     * Fix: dùng 'cancelled' thay vì 'refunded' — chưa có giao dịch tiền thật.
+     * Fix: lockForUpdate() chống race condition với IPN handler.
      */
     public function cancelOrder(int $orderId, int $userId): Order
     {
@@ -195,32 +232,52 @@ final class OrderService
             throw OrderException::notFound($orderId);
         }
 
-        if (!$this->canTransition($order->status, 'cancelled')) {
-            throw OrderException::cannotCancel();
-        }
-
         return DB::transaction(function () use ($order) {
+            // lockForUpdate: chống race condition với IPN handler đang chạy song song
+            $lockedOrder = Order::with(['items.product', 'payment', 'voucher'])
+                ->where('id', $order->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Chỉ cho user tự hủy khi status = 'pending'
+            // Bao gồm: COD chờ xác nhận, online chờ thanh toán, online failed/cancelled/expired
+            if ($lockedOrder->status !== 'pending') {
+                throw OrderException::cannotCancel();
+            }
+
+            $payment = $lockedOrder->payment;
+
+            // Nếu đã paid → không cho user tự hủy, phải qua admin xử lý refund
+            if ($payment?->payment_status === 'paid') {
+                throw new \RuntimeException(
+                    'Đơn hàng đã thanh toán. Vui lòng liên hệ admin để được hỗ trợ hoàn tiền.'
+                );
+            }
+
             // Hoàn tồn kho
-            foreach ($order->items as $item) {
+            foreach ($lockedOrder->items as $item) {
                 $this->productRepository->incrementStock($item->product_id, $item->quantity);
             }
 
             // Hoàn voucher usage
-            if ($order->voucher_id) {
-                $lockedVoucher = Voucher::where('id', $order->voucher_id)->lockForUpdate()->first();
-                VoucherUsage::where('order_id', $order->id)->delete();
+            if ($lockedOrder->voucher_id) {
+                $lockedVoucher = Voucher::where('id', $lockedOrder->voucher_id)->lockForUpdate()->first();
+                VoucherUsage::where('order_id', $lockedOrder->id)->delete();
                 if ($lockedVoucher) {
                     $lockedVoucher->decrement('used_count');
                 }
             }
 
-            $oldStatus = $order->status;
-            $updated   = $this->orderRepository->updateStatus($order, 'cancelled');
-            $updated->payment?->update(['status' => 'refunded']);
+            $oldStatus = $lockedOrder->status;
+            $updated   = $this->orderRepository->updateStatus($lockedOrder, 'cancelled');
+
+            // Fix: dùng 'cancelled' (không phải 'refunded')
+            // 'refunded' chỉ set khi admin/gateway xác nhận hoàn tiền ngân hàng thật sự
+            $payment?->update(['payment_status' => 'cancelled']);
 
             event(new OrderStatusChanged($updated, $oldStatus, 'cancelled'));
 
-            return $updated;
+            return $updated->refresh();
         });
     }
 
@@ -229,30 +286,53 @@ final class OrderService
      */
     public function updateStatus(int $orderId, string $newStatus): Order
     {
-        $order = $this->orderRepository->findById($orderId, ['items.product', 'payment']);
+        return DB::transaction(function () use ($orderId, $newStatus) {
+            $order = Order::with(['items.product', 'payment', 'voucher'])
+                ->where('id', $orderId)
+                ->lockForUpdate()
+                ->first();
 
-        if (!$order) {
-            throw OrderException::notFound($orderId);
-        }
+            if (!$order) {
+                throw OrderException::notFound($orderId);
+            }
 
-        if (!$this->canTransition($order->status, $newStatus)) {
-            throw OrderException::invalidStatusTransition($order->status, $newStatus);
-        }
+            if (!$this->canTransition($order->status, $newStatus)) {
+                throw OrderException::invalidStatusTransition($order->status, $newStatus);
+            }
 
-        $oldStatus = $order->status;
+            $payment = $order->payment;
 
-        return DB::transaction(function () use ($order, $newStatus, $oldStatus) {
+            if (
+                $newStatus === 'confirmed'
+                && $payment?->isOnlineMethod()
+                && ($order->status !== 'processing' || $payment->payment_status !== 'paid')
+            ) {
+                throw OrderException::invalidStatusTransition($order->status, $newStatus);
+            }
+
+            $oldStatus = $order->status;
             $updated = $this->orderRepository->updateStatus($order, $newStatus);
 
-            // Cập nhật payment khi delivered
+            // Cập nhật payment + tăng sold_count khi delivered
             if ($newStatus === 'delivered') {
-                $updated->payment?->update(['status' => 'paid', 'paid_at' => now()]);
+                $updated->payment?->update(['payment_status' => 'paid', 'paid_at' => now()]);
+                foreach ($order->items as $item) {
+                    $this->productRepository->incrementSoldCount($item->product_id, $item->quantity);
+                }
             }
 
             // Hoàn tồn kho khi admin hủy
             if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
+                if ($payment && $payment->payment_status !== 'paid') {
+                    $payment->update(['payment_status' => 'cancelled']);
+                }
+
                 foreach ($order->items as $item) {
                     $this->productRepository->incrementStock($item->product_id, $item->quantity);
+                    // Nếu hủy sau khi đã delivered, cần giảm sold_count lại
+                    if ($oldStatus === 'delivered') {
+                        $this->productRepository->decrementSoldCount($item->product_id, $item->quantity);
+                    }
                 }
                 // Hoàn voucher
                 if ($order->voucher_id) {
@@ -266,7 +346,7 @@ final class OrderService
 
             event(new OrderStatusChanged($updated, $oldStatus, $newStatus));
 
-            return $updated;
+            return $updated->refresh();
         });
     }
 

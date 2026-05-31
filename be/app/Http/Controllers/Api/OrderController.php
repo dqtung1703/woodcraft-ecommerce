@@ -11,12 +11,16 @@ use App\Http\Requests\Order\PlaceOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Http\Responses\ApiResponse;
 use App\Services\OrderService;
+use App\Services\Payment\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class OrderController extends Controller
 {
-    public function __construct(private readonly OrderService $orderService) {}
+    public function __construct(
+        private readonly OrderService   $orderService,
+        private readonly PaymentService $paymentService,
+    ) {}
 
     // GET /api/v1/orders
     public function index(Request $request): JsonResponse
@@ -50,7 +54,17 @@ final class OrderController extends Controller
             PlaceOrderDTO::fromRequest($request->validated(), $request->user()->id)
         );
 
-        return ApiResponse::created(new OrderResource($order), 'Đặt hàng thành công.');
+        $paymentUrl = null;
+
+        // Online payment: gọi gateway SAU KHI transaction tạo đơn đã COMMIT
+        if ($order->payment->isOnlineMethod()) {
+            $paymentUrl = $this->paymentService->initiateOnlinePayment($order);
+        }
+
+        return ApiResponse::created([
+            'order'       => new OrderResource($order),
+            'payment_url' => $paymentUrl,
+        ], 'Đặt hàng thành công.');
     }
 
     // PUT /api/v1/orders/{id}/cancel
@@ -79,6 +93,13 @@ final class OrderController extends Controller
                 ],
             ]
         );
+    }
+
+    // GET /api/v1/admin/orders/{id}
+    public function adminShow(int $id): JsonResponse
+    {
+        $order = $this->orderService->getOrderById($id);
+        return ApiResponse::success(new OrderResource($order));
     }
 
     // PUT /api/v1/admin/orders/{id}/status
