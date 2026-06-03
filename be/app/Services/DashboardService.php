@@ -137,6 +137,16 @@ final class DashboardService
 
         return $query->orderByDesc('total_spent')->paginate($perPage);
     }
+
+    public function toggleCustomerStatus(int $id): User
+    {
+        $user = User::customers()->findOrFail($id);
+        $user->is_active = !$user->is_active;
+        $user->save();
+
+        return $user;
+    }
+
     /**
      * Helper tính phần trăm tăng trưởng
      */

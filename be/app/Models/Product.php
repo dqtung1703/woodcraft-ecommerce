@@ -12,12 +12,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Product extends Model
 {
     protected $fillable = [
-        'name', 'description', 'original_price',
+        'name', 'description', 'original_price', 'cost_price',
         'price', 'stock', 'material', 'category_id',
     ];
 
     protected $casts = [
         'original_price' => 'decimal:2',
+        'cost_price'     => 'decimal:2',
         'price'          => 'decimal:2',
         'stock'          => 'integer',
     ];

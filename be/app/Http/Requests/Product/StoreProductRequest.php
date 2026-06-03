@@ -17,13 +17,15 @@ class StoreProductRequest extends FormRequest
         return [
             'name'           => ['required', 'string', 'max:255'],
             'original_price' => ['required', 'numeric', 'min:0'],
+            'cost_price'     => ['nullable', 'numeric', 'min:0'],
             'price'          => ['required', 'numeric', 'min:0', 'lte:original_price'],
             'stock'          => ['required', 'integer', 'min:0'],
             'category_id'    => ['required', 'integer', 'exists:categories,id'],
             'description'    => ['nullable', 'string'],
             'material'       => ['nullable', 'string', 'max:255'],
-            'images'         => ['nullable', 'array'],
-            'images.*'       => ['url', 'max:2048'],
+            // File upload: tối đa 5 file, mỗi file 5MB
+            'images'         => ['nullable', 'array', 'max:5'],
+            'images.*'       => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 }

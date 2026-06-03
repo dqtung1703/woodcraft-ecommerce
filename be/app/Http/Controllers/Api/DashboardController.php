@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Services\DashboardService;
 use Illuminate\Http\JsonResponse;
@@ -60,7 +61,7 @@ final class DashboardController extends Controller
         $paginator = $this->dashboardService->getCustomers($filters, $perPage);
         
         return ApiResponse::success(
-            $paginator->items(),
+            UserResource::collection($paginator->items()),
             meta: [
                 'pagination' => [
                     'total'        => $paginator->total(),
@@ -69,6 +70,17 @@ final class DashboardController extends Controller
                     'per_page'     => $paginator->perPage(),
                 ],
             ]
+        );
+    }
+
+    // PUT /api/v1/admin/customers/{id}/toggle-status
+    public function toggleStatus(int $id): JsonResponse
+    {
+        $user = $this->dashboardService->toggleCustomerStatus($id);
+        
+        return ApiResponse::success(
+            new UserResource($user),
+            'Cập nhật trạng thái tài khoản thành công.'
         );
     }
 }

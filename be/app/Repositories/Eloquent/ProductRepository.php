@@ -28,7 +28,10 @@ class ProductRepository implements ProductRepositoryInterface
         $query = $this->model
             ->with(['category', 'images' => fn($q) => $q->limit(1), 'discounts'])
             ->withAvg('reviews', 'rating')   // Preload avg rating — tránh N+1
-            ->when($filter->search,     fn($q) => $q->where('name', 'like', "%{$filter->search}%"))
+            ->when($filter->search,     fn($q) => $q->where(fn($sub) =>
+                $sub->where('name', 'like', "%{$filter->search}%")
+                    ->orWhere('description', 'like', "%{$filter->search}%")
+            ))
             ->when($filter->categoryId, fn($q) => $q->where('category_id', $filter->categoryId))
             ->when($filter->minPrice,   fn($q) => $q->where('price', '>=', $filter->minPrice))
             ->when($filter->maxPrice,   fn($q) => $q->where('price', '<=', $filter->maxPrice))
@@ -78,6 +81,16 @@ class ProductRepository implements ProductRepositoryInterface
     public function incrementStock(int $productId, int $quantity): void
     {
         $this->model->where('id', $productId)->increment('stock', $quantity);
+    }
+
+    public function incrementSoldCount(int $productId, int $quantity): void
+    {
+        $this->model->where('id', $productId)->increment('sold_count', $quantity);
+    }
+
+    public function decrementSoldCount(int $productId, int $quantity): void
+    {
+        $this->model->where('id', $productId)->decrement('sold_count', $quantity);
     }
 
     /**

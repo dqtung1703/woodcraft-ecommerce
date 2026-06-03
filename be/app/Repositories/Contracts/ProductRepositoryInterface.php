@@ -18,4 +18,6 @@ interface ProductRepositoryInterface
     public function getRelated(Product $product, int $limit = 8): Collection;
     public function decrementStock(int $productId, int $quantity): void;
     public function incrementStock(int $productId, int $quantity): void;
+    public function incrementSoldCount(int $productId, int $quantity): void;
+    public function decrementSoldCount(int $productId, int $quantity): void;
 }

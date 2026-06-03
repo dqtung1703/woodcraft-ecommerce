@@ -5,17 +5,20 @@
 // =============================================
 namespace App\DTOs\Product;
 
+use Illuminate\Http\UploadedFile;
+
 final readonly class CreateProductDTO
 {
     public function __construct(
         public string  $name,
         public float   $originalPrice,
+        public float   $costPrice,
         public float   $price,
         public int     $stock,
         public int     $categoryId,
         public ?string $description = null,
-        public ?string $material = null,
-        public array   $images = [],
+        public ?string $material    = null,
+        public array   $imageFiles  = [],   // UploadedFile[]
     ) {}
 
     public static function fromRequest(array $data): self
@@ -23,12 +26,15 @@ final readonly class CreateProductDTO
         return new self(
             name:          $data['name'],
             originalPrice: (float) $data['original_price'],
+            costPrice:     isset($data['cost_price'])
+                ? (float) $data['cost_price']
+                : round((float) $data['original_price'] * 0.5, 2),
             price:         (float) $data['price'],
             stock:         (int) $data['stock'],
             categoryId:    (int) $data['category_id'],
             description:   $data['description'] ?? null,
             material:      $data['material'] ?? null,
-            images:        $data['images'] ?? [],
+            imageFiles:    $data['images'] ?? [],
         );
     }
 }

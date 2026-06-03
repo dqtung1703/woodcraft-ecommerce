@@ -20,7 +20,7 @@ final readonly class ProductFilterDTO
 
     public static function fromRequest(array $data): self
     {
-        $allowedSorts = ['price', 'name', 'created_at', 'stock'];
+        $allowedSorts = ['price', 'name', 'created_at', 'stock', 'sold_count'];
         $sortBy = in_array($data['sort_by'] ?? '', $allowedSorts)
             ? $data['sort_by']
             : 'created_at';

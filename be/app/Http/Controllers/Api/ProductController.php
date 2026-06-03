@@ -54,7 +54,11 @@ final class ProductController extends Controller
 
     public function store(StoreProductRequest $request): JsonResponse
     {
-        $dto = CreateProductDTO::fromRequest($request->validated());
+        // $request->validated() không bao gồm files — phải merge thủ công
+        $data = array_merge($request->validated(), [
+            'images' => $request->file('images', []),
+        ]);
+        $dto = CreateProductDTO::fromRequest($data);
         $product = $this->productService->create($dto);
 
         return ApiResponse::created(new ProductDetailResource($product), 'Tạo sản phẩm thành công');
@@ -62,7 +66,12 @@ final class ProductController extends Controller
 
     public function update(UpdateProductRequest $request, int $id): JsonResponse
     {
-        $dto = UpdateProductDTO::fromRequest($request->validated());
+        // $request->validated() không bao gồm files — phải merge thủ công
+        $data = array_merge($request->validated(), [
+            'images'      => $request->file('images'),
+            'keep_images' => $request->input('keep_images'),
+        ]);
+        $dto = UpdateProductDTO::fromRequest($data);
         $product = $this->productService->update($id, $dto);
 
         return ApiResponse::success(new ProductDetailResource($product), 'Cập nhật sản phẩm thành công');
