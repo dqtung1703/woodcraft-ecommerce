@@ -37,7 +37,10 @@ class OrderTest extends TestCase
         $this->setupCartData($user, $token);
 
         $payload = [
-            'payment_method' => 'cod'
+            'payment_method'   => 'cod',
+            'shipping_name'    => 'John Doe',
+            'shipping_phone'   => '0987654321',
+            'shipping_address' => '123 Test Street, Hanoi',
         ];
 
         $response = $this->withHeaders(['Authorization' => "Bearer $token"])
@@ -60,7 +63,7 @@ class OrderTest extends TestCase
                          ->postJson('/api/v1/orders', []);
 
         $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['payment_method']);
+                 ->assertJsonValidationErrors(['payment_method', 'shipping_name', 'shipping_phone', 'shipping_address']);
     }
 
     public function test_admin_can_update_order_status()
@@ -71,10 +74,13 @@ class OrderTest extends TestCase
 
         $orderResponse = $this->withHeaders(['Authorization' => "Bearer $token"])
                               ->postJson('/api/v1/orders', [
-                                  'payment_method' => 'cod'
+                                  'payment_method'   => 'cod',
+                                  'shipping_name'    => 'John Doe',
+                                  'shipping_phone'   => '0987654321',
+                                  'shipping_address' => '123 Test Street, Hanoi',
                               ]);
         
-        $orderId = $orderResponse->json('data.id');
+        $orderId = $orderResponse->json('data.order.id');
 
         $admin = User::factory()->create(['role' => 'admin', 'password_hash' => 'pwd']);
         \Laravel\Sanctum\Sanctum::actingAs($admin);
@@ -103,5 +109,100 @@ class OrderTest extends TestCase
                          ]);
 
         $response->assertStatus(403);
+    }
+
+    public function test_admin_cannot_confirm_online_order_before_payment_is_paid()
+    {
+        $user = User::factory()->create(['password_hash' => 'pwd']);
+        $token = $user->createToken('test')->plainTextToken;
+        $this->setupCartData($user, $token);
+
+        $orderResponse = $this->withHeaders(['Authorization' => "Bearer $token"])
+                              ->postJson('/api/v1/orders', [
+                                  'payment_method'   => 'vnpay',
+                                  'shipping_name'    => 'John Doe',
+                                  'shipping_phone'   => '0987654321',
+                                  'shipping_address' => '123 Test Street, Hanoi',
+                              ]);
+
+        $orderId = $orderResponse->json('data.order.id');
+
+        $admin = User::factory()->create(['role' => 'admin', 'password_hash' => 'pwd']);
+        \Laravel\Sanctum\Sanctum::actingAs($admin);
+
+        $response = $this->putJson("/api/v1/admin/orders/{$orderId}/status", [
+            'status' => 'confirmed',
+        ]);
+
+        $response->assertStatus(422);
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $orderId,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_admin_can_confirm_online_order_after_payment_is_paid()
+    {
+        $user = User::factory()->create(['password_hash' => 'pwd']);
+        $token = $user->createToken('test')->plainTextToken;
+        $this->setupCartData($user, $token);
+
+        $orderResponse = $this->withHeaders(['Authorization' => "Bearer $token"])
+                              ->postJson('/api/v1/orders', [
+                                  'payment_method'   => 'vnpay',
+                                  'shipping_name'    => 'John Doe',
+                                  'shipping_phone'   => '0987654321',
+                                  'shipping_address' => '123 Test Street, Hanoi',
+                              ]);
+
+        $orderId = $orderResponse->json('data.order.id');
+        \App\Models\Order::whereKey($orderId)->update(['status' => 'processing']);
+        \App\Models\Payment::where('order_id', $orderId)->update(['payment_status' => 'paid']);
+
+        $admin = User::factory()->create(['role' => 'admin', 'password_hash' => 'pwd']);
+        \Laravel\Sanctum\Sanctum::actingAs($admin);
+
+        $response = $this->putJson("/api/v1/admin/orders/{$orderId}/status", [
+            'status' => 'confirmed',
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $orderId,
+            'status' => 'confirmed',
+        ]);
+    }
+
+    public function test_admin_cancel_unpaid_order_sets_payment_cancelled()
+    {
+        $user = User::factory()->create(['password_hash' => 'pwd']);
+        $token = $user->createToken('test')->plainTextToken;
+        $this->setupCartData($user, $token);
+
+        $orderResponse = $this->withHeaders(['Authorization' => "Bearer $token"])
+                              ->postJson('/api/v1/orders', [
+                                  'payment_method'   => 'cod',
+                                  'shipping_name'    => 'John Doe',
+                                  'shipping_phone'   => '0987654321',
+                                  'shipping_address' => '123 Test Street, Hanoi',
+                              ]);
+
+        $orderId = $orderResponse->json('data.order.id');
+
+        $admin = User::factory()->create(['role' => 'admin', 'password_hash' => 'pwd']);
+        \Laravel\Sanctum\Sanctum::actingAs($admin);
+
+        $response = $this->putJson("/api/v1/admin/orders/{$orderId}/status", [
+            'status' => 'cancelled',
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('payments', [
+            'order_id' => $orderId,
+            'payment_status' => 'cancelled',
+        ]);
     }
 }
