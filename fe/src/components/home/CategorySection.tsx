@@ -1,14 +1,28 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { PATHS } from '@/utils/routePaths';
+import furnitureImg from '@/assets/heritage/furniture.jpg';
+import lacquerplateImg from '@/assets/heritage/lacquerplate.jpg';
+import giftImg from '@/assets/heritage/gift.png';
 
-const categories = [
+type CategoryItem = {
+  title: string;
+  desc: string | null;
+  colSpan: string;
+  imgAlt: string;
+  img: string;
+  titleSize: string;
+  imgClass?: string;
+  hideText?: boolean;
+};
+
+const categories: CategoryItem[] = [
   {
     title: 'Nội thất gỗ',
     desc: 'Kiệt tác không gian sống từ gỗ quý tự nhiên.',
     colSpan: 'md:col-span-2',
     imgAlt: 'Luxury handcrafted wood furniture with mother of pearl inlay',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBcVjbfKP3QHP8ojKcHHccxOda7Urc_cCYtXQ-x1oxVSNxyN-MKWzpuwJTbrdbr1hdJEnH3HsjBqBB_VIBe4qb8gqoIZ3LNt9V0ERRAlrgYqZHVL-7jv8Hizm9mL1UqASkkX9Kg3oPskk-mmNF2YCcKRCkuAexudq78vJfUqdLFeuzLBFeHEMXC3F4kmCqxhBEsUbdYhBPy-2jCEc6Z8SxkZ-t_2DxpDVO7JBDJO7cn5s8jgyedXeiEcNtkt_p_yE8lupW81akkHKc',
+    img: furnitureImg,
     titleSize: 'text-3xl',
   },
   {
@@ -24,7 +38,7 @@ const categories = [
     desc: null,
     colSpan: '',
     imgAlt: 'Exquisite mother of pearl inlay box',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB9bn5YmjST16uvy52C8CKqTuDkaLaA6ZEpgK7PjKfs_OFYehZvGbsVMNxDiSagpyPzAMzeHTKFFAzka8aSLye86qhmLFqnYUrJBoWY1NSI3-iCrIN9Pjr4darDeC1m9rHyemHHCrdExaMzycFxQjnVBWubSdxogp8WOQdPD9fGqUgZ8ai_RPj8_ZHpk-oz1zlLrLE_BNtHAMvpCttJP-i4qDXMUCTo3RxRmvUTX9nU6EQj6Ubs6ETaUZuDpN2pw-myYLILKiGjJlo',
+    img: lacquerplateImg,
     titleSize: 'text-2xl',
   },
   {
@@ -32,8 +46,9 @@ const categories = [
     desc: 'Sự tinh tế trong từng chi tiết nhỏ nhất.',
     colSpan: 'md:col-span-2',
     imgAlt: 'High-end artisanal corporate gifts',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCldKtv2nwuMLeDo2ENYXHNFhegIWD5Xp3GVvsBzYCNggdmUJ29XaniZ3Kv15SH-gJrSnHg8GZId8EPrsmuSkfQXENs6vjjH6cheFNM5kB_3nb3RLu2p7Wf6pnide0aa2EJiYSn3N6QaPYNBz0yNFekUDdB232HW2cqGpgIV7w-X5A_oWsQUsDvUP5s_HYSInyr630mqI3P0VZo5VMibLBn3Djoy4xKuIZMuJSrw3XZVw6tIYZSoZS0So4QOdNDz7HcwaOOzsrnZYQ',
+    img: giftImg,
     titleSize: 'text-3xl',
+    hideText: true,
   },
 ];
 
@@ -63,16 +78,25 @@ export default function CategorySection() {
             transition={{ duration: 0.6, delay: idx * 0.1 }}
             className={`${cat.colSpan} relative rounded-[1.25rem] overflow-hidden group cursor-pointer h-64 md:h-auto`}
           >
-            <Link to={PATHS.PRODUCTS}>
+            <Link to={PATHS.PRODUCTS} className="block w-full h-full bg-[#0a0a0a] relative overflow-hidden">
+              {cat.imgClass?.includes('object-contain') && (
+                <img
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110 pointer-events-none"
+                  src={cat.img}
+                />
+              )}
               <img
                 alt={cat.imgAlt}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className={`relative z-10 w-full h-full ${cat.imgClass || 'object-cover'} transition-transform duration-700 group-hover:scale-105`}
                 src={cat.img}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-on-surface/80 to-transparent p-8 md:p-10 flex flex-col justify-end">
-                <h3 className={`${cat.titleSize} text-white font-serif mb-2`}>{cat.title}</h3>
-                {cat.desc && <p className="text-white/80 max-w-md">{cat.desc}</p>}
-              </div>
+              {!cat.hideText && (
+                <div className="absolute inset-0 bg-gradient-to-t from-on-surface/80 to-transparent p-8 md:p-10 flex flex-col justify-end z-20">
+                  <h3 className={`${cat.titleSize} text-white font-serif mb-2`}>{cat.title}</h3>
+                  {cat.desc && <p className="text-white/80 max-w-md">{cat.desc}</p>}
+                </div>
+              )}
             </Link>
           </motion.div>
         ))}

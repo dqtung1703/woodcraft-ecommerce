@@ -74,10 +74,14 @@ class Product extends Model
         $discount = $this->activeDiscount();
         if (!$discount) return (float) $this->price;
 
+        $basePrice = ($this->original_price && $this->original_price > 0)
+            ? (float) $this->original_price
+            : (float) $this->price;
+
         if ($discount->discount_type === 'percent') {
-            return $this->price * (1 - $discount->discount_value / 100);
+            return $basePrice * (1 - $discount->discount_value / 100);
         }
-        return max(0, $this->price - $discount->discount_value);
+        return max(0, $basePrice - $discount->discount_value);
     }
 
     // Rating trung bình — dùng withAvg() preload nếu có, fallback query nếu không

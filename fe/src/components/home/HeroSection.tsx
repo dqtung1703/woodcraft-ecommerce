@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { PATHS } from '@/utils/routePaths';
+import homeBanner from '@/assets/heritage/home-banner.png';
 
 export default function HeroSection() {
   return (
@@ -9,7 +10,7 @@ export default function HeroSection() {
         <img
           alt="Nghệ nhân khảm trai làng Chuyên Mỹ"
           className="w-full h-full object-cover brightness-75 contrast-110"
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWpU2HQqgdJOUAylO3lrJjcRQiynumEazjyivryyzGXh0eZvQqdBI1p6WBJUE7g5mOGabczPfG-8EAH91Zot9hTi0uW_WcjAtvNPEPxQEMsLlwaBCfauncGpCzpUPc3ndS7yltwdeXDNUKIEwfCSQm7yiQiQLfjmPrd-fR8_LgqUNGlYth-LXm-GDXxHsIztAgIuh9asrk37CK_HBLKlBNxNwMS0BLZ2yTv3UPHbOG9w-nHfabVojCQYhhLve_shrUYPQRP9e2eRQ"
+          src={homeBanner}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/20 to-transparent" />
       </div>
