@@ -20,6 +20,51 @@ function TypingDots() {
 
 // ── Chatbot Widget ────────────────────────────────────────────────────────────
 
+function MessageContent({ content, isAssistant }: { content: string; isAssistant: boolean }) {
+  if (!isAssistant) return <>{content}</>;
+
+  const lines = content
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const blocks: Array<{ type: 'list'; items: string[] } | { type: 'text'; text: string }> = [];
+
+  lines.forEach((line) => {
+    const bulletMatch = line.match(/^[•\-*]\s+(.+)$/);
+
+    if (bulletMatch) {
+      const lastBlock = blocks[blocks.length - 1];
+      if (lastBlock?.type === 'list') {
+        lastBlock.items.push(bulletMatch[1]);
+      } else {
+        blocks.push({ type: 'list', items: [bulletMatch[1]] });
+      }
+      return;
+    }
+
+    blocks.push({ type: 'text', text: line });
+  });
+
+  return (
+    <div className="space-y-3">
+      {blocks.map((block, index) => (
+        block.type === 'list' ? (
+          <ul key={index} className="space-y-2.5 pl-4 list-disc marker:text-primary">
+            {block.items.map((item, itemIndex) => (
+              <li key={itemIndex} className="pl-1">
+                {item}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p key={index}>{block.text}</p>
+        )
+      ))}
+    </div>
+  );
+}
+
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen]         = useState(false);
   const [messages, setMessages]     = useState<ChatbotMessage[]>([]);
@@ -51,7 +96,7 @@ export default function ChatbotWidget() {
     setIsTyping(true);
 
     try {
-      const res = await chatbotService.sendMessage({ message: text });
+      const res = await chatbotService.sendMessage({ message: text, session_id: sessionId });
       if (res.session_id) setSessionId(res.session_id);
       setMessages((prev) => [...prev, { role: 'assistant', content: res.reply }]);
     } catch {
@@ -88,7 +133,7 @@ export default function ChatbotWidget() {
         onClick={() => setIsOpen((o) => !o)}
         aria-label={isOpen ? 'Đóng chatbot' : 'Mở chatbot tư vấn'}
         aria-expanded={isOpen}
-        className={`fixed bottom-6 right-4 sm:right-6 z-40 w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 ${
+        className={`fixed bottom-6 right-4 sm:right-6 z-[80] w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 ${
           isOpen
             ? 'bg-on-surface text-white scale-95'
             : 'bg-primary text-white hover:scale-110'
@@ -100,7 +145,7 @@ export default function ChatbotWidget() {
       {/* Chat panel */}
       {isOpen && (
         <div
-          className="fixed bottom-24 right-4 sm:right-6 z-40 w-[calc(100vw-2rem)] sm:w-96 bg-white rounded-2xl shadow-2xl border border-outline-variant/20 flex flex-col overflow-hidden"
+          className="fixed bottom-24 right-4 sm:right-6 z-[80] w-[calc(100vw-2rem)] sm:w-96 bg-white rounded-2xl shadow-2xl border border-outline-variant/20 flex flex-col overflow-hidden"
           style={{ maxHeight: 'min(560px, calc(100vh - 8rem))' }}
           role="region"
           aria-label="Chat tư vấn"
@@ -152,13 +197,13 @@ export default function ChatbotWidget() {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                  className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${
                     msg.role === 'user'
-                      ? 'bg-primary text-white rounded-br-sm'
-                      : 'bg-surface-container-low text-on-surface rounded-bl-sm'
+                      ? 'max-w-[80%] bg-primary text-white rounded-br-sm'
+                      : 'max-w-[88%] bg-surface-container-low text-on-surface rounded-bl-sm'
                   }`}
                 >
-                  {msg.content}
+                  <MessageContent content={msg.content} isAssistant={msg.role === 'assistant'} />
                 </div>
               </div>
             ))}

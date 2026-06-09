@@ -115,6 +115,21 @@ export default function ProductsPage() {
             )}
           </div>
 
+          {/* Sort */}
+          <div>
+            <h2 className="font-serif font-bold mb-4 text-on-surface">Sắp xếp</h2>
+            <select
+              className="w-full bg-surface-container-low border border-outline-variant rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+              value={sort}
+              onChange={(e) => handleSort(e.target.value)}
+              aria-label="Sắp xếp sản phẩm"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Categories */}
           <div>
             <h2 className="font-serif font-bold mb-4 text-on-surface">Danh mục</h2>
@@ -147,20 +162,6 @@ export default function ProductsPage() {
             </ul>
           </div>
 
-          {/* Sort */}
-          <div>
-            <h2 className="font-serif font-bold mb-4 text-on-surface">Sắp xếp</h2>
-            <select
-              className="w-full bg-surface-container-low border border-outline-variant rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-              value={sort}
-              onChange={(e) => handleSort(e.target.value)}
-              aria-label="Sắp xếp sản phẩm"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
         </aside>
 
         {/* ── Product grid ── */}

@@ -40,7 +40,9 @@ export default function ProductDetailPage() {
       .getProduct(numId)
       .then((data) => {
         setProduct(data);
-        setSelectedImage(data.image);
+        // ProductDetail trả về images[] (không phải image field)
+        const firstImg = data.images?.[0] ?? data.image ?? null;
+        setSelectedImage(firstImg);
         productService.getRelatedProducts(numId).then(setRelated).catch(() => {});
       })
       .catch((err) => setError(err.message))
@@ -66,11 +68,9 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Build gallery from main image + extra images
-  const gallery = [
-    ...(product.image ? [product.image] : []),
-    ...(product.images ?? []).filter((img) => img !== product.image),
-  ];
+  // Build gallery from images[] (detail endpoint), fallback to product.image
+  const allImages = product.images?.length ? product.images : (product.image ? [product.image] : []);
+  const gallery = [...new Set(allImages)];
 
   return (
     <div className="max-w-7xl mx-auto px-6 md:px-12 py-12">
@@ -127,20 +127,21 @@ export default function ProductDetailPage() {
 
           {product.avg_rating > 0 && <StarRating rating={product.avg_rating} size="md" className="mb-4" />}
 
-          {/* Price */}
-          <div className="flex items-center gap-4 mb-6">
-            <span className="text-3xl font-bold text-primary">{formatCurrency(product.final_price)}</span>
-            {product.has_discount && product.original_price && (
-              <>
-                <span className="text-lg text-on-surface-variant line-through">
-                  {formatCurrency(product.original_price)}
-                </span>
-                {discountLabel && (
-                  <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full">
-                    {discountLabel}
-                  </span>
-                )}
-              </>
+          {/* Price — giá gốc gạch ngang + giá bán nổi bật (kiểu Shopee) */}
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            {/* Giá gốc gạch ngang — hiện khi khác giá bán */}
+            {product.original_price && product.original_price !== product.final_price && (
+              <span className="text-lg text-on-surface-variant line-through">
+                {formatCurrency(product.original_price)}
+              </span>
+            )}
+            {/* Giá bán hiện tại */}
+            <span className="text-3xl font-bold text-red-600">{formatCurrency(product.final_price)}</span>
+            {/* Badge % giảm */}
+            {discountLabel && (
+              <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full">
+                {discountLabel}
+              </span>
             )}
           </div>
 

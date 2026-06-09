@@ -2,12 +2,15 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PATHS } from '@/utils/routePaths';
+import artisanCardImg from '@/assets/heritage/artisan_card.jpg';
+import inlayImg from '@/assets/heritage/inlay.jpg';
+import workshopImg from '@/assets/heritage/workshop.jpg';
 
 export default function HeritageSection() {
   const images = [
-    { src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8M3hPy2HxCfF7_8-0L8CJsLQoOKm-xtgo0wVa5otO3R7xPvp_y7mgb81-qwoLagpTEgyxie35AKuAlKpK23pi0IaEOs_kEmtrJ6fQSsKNv_mNYuY4x_2BPfxS6QboTD_hcVbjVH78O8otTff0tWqQynp-91iQuE5iw9_ms4Y1_fxpwe0oHEzTamz8AthHm-ZTBB0XsGvezEKgNCCb8FIo8myp1RLYoJUcIeYhtQ9_e59_pIMHCXRIyXHvlTMVf8bu-FIYcKvN_eY', alt: 'Nghệ nhân khảm trai', label: 'Nghệ nhân khảm trai', rowSpan: '' },
-    { src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAg-9FYX26HsCBTc_FcreFRFH7tsByQOgQam-hJDRlcMaND6uJblga2hj2hBhVSs085tBR-vQsE10oiJarCN-sCjky_KaakYkhnXNjlH-d06krSJ5tz9yinkEhfImN-fTO9ThAmLLddIREE-liBIFiXnuetvXzARLjRa5Ck5U5Ow_EQci__i6XT7F356PcnLEKt4o_-IgQG427qOTN3CTPOLBbm-DaUEaDQV81N2CNKckU2hw6XNXCK3_X8rbJ-V_VAv0PSwSP-daA', alt: 'Cẩn xà cừ tinh xảo', label: 'Cẩn xà cừ tinh xảo', rowSpan: 'row-span-2' },
-    { src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBx6HC2lBLF5uRS6r6k7g0-LniR_3RofkEZdNtl7P6A5WRH2s7i7l4FE0FR-s7EA1hS1igTxf4b_mTJqzmUOaCK8KhwvhrmEUutef6hFzsROpjC1hVddOVpVJ084CE-Kk56-hcad_QUjAiBefaJ7-D9zlmFmfPTaOoz5cFxmqgEvdt8g_p4TWevsFAqjDxa1AVud5JrhIBqzIMq-W80M8B_wlCjxZ3S28s_DnPCYBKOhtoRieCtUoSDgZTRLVW7Ods02hZdPdywDOM', alt: 'Xương mộc truyền thống', label: 'Xương mộc truyền thống', rowSpan: '' },
+    { src: artisanCardImg, alt: 'Nghệ nhân khảm trai', label: 'Nghệ nhân khảm trai', rowSpan: '', objectPosition: '68% center' },
+    { src: inlayImg, alt: 'Cẩn xà cừ tinh xảo', label: 'Cẩn xà cừ tinh xảo', rowSpan: 'row-span-2', objectPosition: '45% center' },
+    { src: workshopImg, alt: 'Xương mộc truyền thống', label: 'Xương mộc truyền thống', rowSpan: '', objectPosition: 'center' },
   ];
 
   return (
@@ -24,7 +27,12 @@ export default function HeritageSection() {
               transition={{ duration: 0.6, delay: idx * 0.15 }}
               className={`bg-surface-container-high rounded-xl overflow-hidden relative group ${img.rowSpan}`}
             >
-              <img alt={img.alt} className="w-full h-full object-cover" src={img.src} />
+              <img
+                alt={img.alt}
+                className="w-full h-full object-cover"
+                src={img.src}
+                style={{ objectPosition: img.objectPosition }}
+              />
               <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all" />
               <span className="absolute bottom-4 left-4 text-white text-xs font-sans uppercase tracking-widest">
                 {img.label}

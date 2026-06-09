@@ -7,6 +7,7 @@ export type ChatbotMessage = {
 
 export type ChatbotPayload = {
   message: string;
+  session_id?: string; // gửi lại để BE dùng cache key cũ, giữ context
 };
 
 export type ChatbotResponse = {

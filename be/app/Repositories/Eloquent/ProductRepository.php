@@ -105,7 +105,6 @@ class ProductRepository implements ProductRepositoryInterface
             'product_id' => $product->id,
             'image_url'  => $url,
             'created_at' => now(),
-            'updated_at' => now(),
         ], $imageUrls);
 
         ProductImage::insert($records);

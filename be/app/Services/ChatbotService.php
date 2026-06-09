@@ -4,18 +4,19 @@ namespace App\Services;
 
 use App\Exceptions\BusinessException;
 use App\Models\Product;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 final class ChatbotService
 {
     private string $apiKey;
-    private string $apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-    private string $model  = 'openai/gpt-oss-120b:free';
-    private int $maxMessages = 10;
-    private int $ttlMinutes = 30;
+    private string $apiUrl    = 'https://openrouter.ai/api/v1/chat/completions';
+    private string $model     = 'openai/gpt-oss-120b:free';
+    private int    $maxMessages = 10;   // số cặp user/assistant giữ trong history
+    private int    $ttlMinutes  = 30;
+    private int    $descMaxLen  = 200;  // cắt description để tránh prompt phình
 
     public function __construct()
     {
@@ -23,125 +24,263 @@ final class ChatbotService
         $this->apiKey = config('services.openrouter.key') ?: config('services.openai.key') ?: '';
     }
 
+    // =========================================================================
+    // Public API
+    // =========================================================================
+
     public function chat(string $message, string $sessionId, int|string $userId): array
     {
         if (empty($this->apiKey)) {
             throw new BusinessException('Hệ thống AI chưa được cấu hình API Key.', 500);
         }
 
-        // Khóa cô lập bảo vệ rò rỉ session giữa các user
+        // Khoá cô lập bảo vệ rò rỉ session giữa các user
         $cacheKey = "chatbot_session_{$userId}_{$sessionId}";
 
-        // Tải Context từ RAM cache (nếu có)
-        $messages = Cache::get($cacheKey, []);
-        
-        if (empty($messages)) {
-            // Lần đầu khởi tạo Session
-            $messages[] = [
-                'role' => 'system',
-                'content' => $this->buildSystemPrompt($message)
-            ];
+        // 1. Load history từ cache (system prompt + các lượt user/assistant cũ)
+        $history = Cache::get($cacheKey, []);
+
+        if (empty($history)) {
+            $history[] = ['role' => 'system', 'content' => $this->buildSystemPrompt()];
         }
 
-        // Nhồi thêm câu hỏi mới
-        $messages[] = ['role' => 'user', 'content' => $message];
+        // 2. Detect intent & lấy context sản phẩm liên quan (nếu câu hỏi cần)
+        $productContext = $this->getProductContext($message);
 
-        // Call OpenRouter API
+        // 3. Build $requestMessages cho lần gọi này — KHÔNG lưu context vào history
+        //    Augment user message với product context nếu có
+        $userContent = $productContext
+            ? "[Dữ liệu sản phẩm tham khảo]\n{$productContext}\n\n[Câu hỏi khách]\n{$message}"
+            : $message;
+
+        $requestMessages = array_merge($history, [
+            ['role' => 'user', 'content' => $userContent],
+        ]);
+
+        // 4. Gọi OpenRouter API
         try {
             $response = Http::withHeaders([
                 'Authorization' => "Bearer {$this->apiKey}",
                 'HTTP-Referer'  => url('/'),
-                'X-Title'       => 'Woodcraft E-commerce'
+                'X-Title'       => 'Woodcraft E-commerce',
             ])->timeout(30)->post($this->apiUrl, [
                 'model'    => $this->model,
-                'messages' => $messages,
+                'messages' => $requestMessages,
             ]);
 
             if ($response->failed()) {
                 Log::error('OpenRouter API Failed', ['response' => $response->body()]);
                 return [
-                    'reply' => 'Hệ thống AI đang bảo trì. Vui lòng thử lại sau một lát.',
-                    'session_id' => $sessionId
-                ];
-            }
-            
-            $replyContent = $response->json('choices.0.message.content');
-            
-            if (!$replyContent) {
-                 return [
-                    'reply' => 'AI đang bị lỗi phản hồi. Vui lòng hỏi lại nha.',
-                    'session_id' => $sessionId
+                    'reply'      => 'Hệ thống AI đang bảo trì. Vui lòng thử lại sau một lát.',
+                    'session_id' => $sessionId,
                 ];
             }
 
+            $replyContent = $response->json('choices.0.message.content');
+
+            if (!$replyContent) {
+                return [
+                    'reply'      => 'AI đang bị lỗi phản hồi. Vui lòng hỏi lại nha.',
+                    'session_id' => $sessionId,
+                ];
+            }
         } catch (\Exception $e) {
             Log::error('OpenRouter Connect Exception', ['error' => $e->getMessage()]);
             return [
-                'reply' => 'Kết nối tới AI thất bại. Vui lòng thử lại sau.',
-                'session_id' => $sessionId
+                'reply'      => 'Kết nối tới AI thất bại. Vui lòng thử lại sau.',
+                'session_id' => $sessionId,
             ];
         }
 
-        // Lưu câu trả lời của AI
-        $messages[] = ['role' => 'assistant', 'content' => $replyContent];
+        // 5. Cache chỉ lưu câu hỏi GỐC + câu trả lời — không lưu product context
+        $history[] = ['role' => 'user',      'content' => $message];
+        $history[] = ['role' => 'assistant', 'content' => $replyContent];
 
-        // Lọc đi các node dư thừa
-        if (count($messages) > $this->maxMessages * 2) {
-            $system = $messages[0];
-            $sliced = array_slice($messages, -($this->maxMessages * 2) + 1);
-            array_unshift($sliced, $system);
-            $messages = $sliced;
+        // Trim history nếu vượt giới hạn (giữ system + N cặp gần nhất)
+        if (count($history) > $this->maxMessages * 2 + 1) {
+            $system  = $history[0];
+            $sliced  = array_slice($history, -($this->maxMessages * 2));
+            $history = array_merge([$system], $sliced);
         }
 
-        Cache::put($cacheKey, $messages, now()->addMinutes($this->ttlMinutes));
+        Cache::put($cacheKey, $history, now()->addMinutes($this->ttlMinutes));
 
         return [
-            'reply' => $replyContent,
-            'session_id' => $sessionId
+            'reply'      => $replyContent,
+            'session_id' => $sessionId,
         ];
     }
 
     public function clearHistory(string $sessionId, int|string $userId): void
     {
-        $cacheKey = "chatbot_session_{$userId}_{$sessionId}";
-        Cache::forget($cacheKey);
+        Cache::forget("chatbot_session_{$userId}_{$sessionId}");
     }
 
-    private function buildSystemPrompt(string $userMessage): string
+    // =========================================================================
+    // System Prompt
+    // =========================================================================
+
+    private function buildSystemPrompt(): string
     {
-        $basePrompt = "Bạn là trợ lý ảo thân thiện của xưởng mộc Woodcraft. Tư vấn ngắn gọn, lịch sự, tập trung vào đồ nội thất và gỗ.\n";
+        return <<<PROMPT
+Bạn là trợ lý tư vấn của Woodcraft — xưởng gỗ thủ công cao cấp Việt Nam.
 
-        $keywords = ['gỗ', 'bàn', 'ghế', 'giường', 'tủ', 'kệ', 'cửa', 'nội thất'];
-        $found = false;
-        
-        $lowercaseMsg = mb_strtolower($userMessage);
-        
-        foreach ($keywords as $keyword) {
-            if (Str::contains($lowercaseMsg, $keyword)) {
-                $found = true;
-                break;
+QUY TẮC:
+• Tư vấn DỰA TRÊN danh sách sản phẩm được cung cấp trong [Dữ liệu sản phẩm tham khảo] khi có.
+• KHÔNG nói "không có sản phẩm" hay "chưa có mặt hàng" nếu chưa nhận được danh sách từ hệ thống.
+• Trả lời ngắn gọn, dùng bullet (•), KHÔNG dùng bảng markdown (|---|).
+• Tối đa 3–4 gợi ý mỗi lượt. Giá format: "1.200.000 VNĐ".
+• Nếu chưa rõ ngân sách hoặc dịp tặng, đưa 2–3 gợi ý trước rồi hỏi thêm 1 câu.
+• Câu hỏi về chính sách (đổi trả, vận chuyển, địa chỉ): trả lời lịch sự, không bịa thông tin cụ thể.
+PROMPT;
+    }
+
+    // =========================================================================
+    // Intent Detection
+    // =========================================================================
+
+    /**
+     * Kiểm tra câu hỏi có liên quan đến sản phẩm không.
+     * Dùng để gate retrieval — tránh query DB với câu như "shop ở đâu", "đổi trả thế nào".
+     */
+    private function hasProductIntent(string $message): bool
+    {
+        $keywords = [
+            // Loại sản phẩm nội thất
+            'gỗ', 'bàn', 'ghế', 'giường', 'tủ', 'kệ', 'cửa', 'nội thất',
+            // Quà tặng / khảm trai
+            'khảm', 'quà', 'tặng', 'tranh', 'đĩa', 'hộp', 'khay', 'bút',
+            'tráp', 'lót', 'đựng', 'trà',
+            // Intent mua / tư vấn
+            'mua', 'giá', 'bao nhiêu', 'có không', 'loại', 'sản phẩm',
+            'gợi ý', 'tư vấn', 'chọn', 'nên lấy', 'tìm',
+            // Follow-up so sánh — để "cái nào rẻ hơn?" vẫn trigger retrieval
+            'rẻ', 'đắt', 'hơn', 'cái nào', 'món nào', 'loại nào', 'so sánh',
+            'rẻ hơn', 'đắt hơn', 'tốt hơn', 'ngon hơn',
+        ];
+
+        $lower = mb_strtolower($message);
+        foreach ($keywords as $kw) {
+            if (str_contains($lower, $kw)) {
+                return true;
             }
         }
 
-        if ($found) {
-            // Trích xuất Data (Đã cache lại để chống Overload DB do inRandomOrder)
-            $products = Cache::remember('chatbot_products', 300, fn() =>
-                Product::where('stock', '>', 0)
-                    ->latest()
-                    ->limit(5)
-                    ->get(['name', 'price', 'description'])
-            );
+        return false;
+    }
 
-            if ($products->isNotEmpty()) {
-                $basePrompt .= "\nDữ liệu sản phẩm tham khảo:\n";
-                foreach ($products as $p) {
-                    $priceFormat = number_format($p->price);
-                    $basePrompt .= "- {$p->name}: {$priceFormat} VNĐ. {$p->description}\n";
+    // =========================================================================
+    // Product Retrieval
+    // =========================================================================
+
+    /**
+     * Normalize + tokenize câu hỏi thành mảng search terms.
+     * Bỏ dấu câu, giữ dấu tiếng Việt (DB cũng có dấu), lọc stop-word.
+     */
+    private function extractSearchTerms(string $message): array
+    {
+        // Bỏ dấu câu cơ bản trước khi split
+        $normalized = preg_replace('/[?!.,;:\"\'\'\"\(\)\[\]]/u', ' ', $message);
+        $normalized = mb_strtolower($normalized);
+
+        $stopWords = [
+            'tôi', 'muốn', 'mua', 'có', 'không', 'là', 'và', 'cho',
+            'của', 'một', 'cái', 'con', 'bộ', 'đang', 'được', 'thì',
+            'mà', 'hay', 'hoặc', 'với', 'về', 'trong', 'nào', 'nên',
+            'ạ', 'nhé', 'nha', 'ơi', 'à', 'ừ',
+        ];
+
+        $raw = explode(' ', $normalized);
+        $terms = [];
+
+        foreach ($raw as $t) {
+            $t = trim($t);
+            if ($t !== '' && mb_strlen($t) >= 2 && !in_array($t, $stopWords)) {
+                $terms[] = $t;
+            }
+        }
+
+        return array_values(array_unique($terms));
+    }
+
+    /**
+     * 2-pass ranked retrieval:
+     *   Pass 1 — match name / category / material (điểm cao)
+     *   Pass 2 — bổ sung từ description nếu < 3 kết quả (điểm thấp)
+     *   Fallback — latest products nếu vẫn trống
+     */
+    private function getRelevantProducts(string $message): Collection
+    {
+        $terms = $this->extractSearchTerms($message);
+
+        // Pass 1: name, category, material
+        $results = Product::with('category')
+            ->where('stock', '>', 0)
+            ->where(function ($q) use ($terms) {
+                foreach ($terms as $term) {
+                    $q->orWhere('name', 'LIKE', "%{$term}%")
+                      ->orWhereHas('category', fn ($c) => $c->where('name', 'LIKE', "%{$term}%"))
+                      ->orWhere('material', 'LIKE', "%{$term}%");
                 }
-                $basePrompt .= "\nHãy dùng thông tin trên gợi ý sản phẩm phù hợp cho khách.";
-            }
+            })
+            ->limit(8)
+            ->get(['id', 'name', 'price', 'description', 'material', 'category_id']);
+
+        // Pass 2: description match nếu kết quả ít
+        if ($results->count() < 3 && !empty($terms)) {
+            $descMatches = Product::with('category')
+                ->where('stock', '>', 0)
+                ->whereNotIn('id', $results->pluck('id'))
+                ->where(function ($q) use ($terms) {
+                    foreach ($terms as $term) {
+                        $q->orWhere('description', 'LIKE', "%{$term}%");
+                    }
+                })
+                ->limit(8 - $results->count())
+                ->get(['id', 'name', 'price', 'description', 'material', 'category_id']);
+
+            $results = $results->merge($descMatches);
         }
 
-        return $basePrompt;
+        // Fallback: latest nếu vẫn trống (vd câu follow-up ngắn không match gì)
+        if ($results->isEmpty()) {
+            $results = Product::with('category')
+                ->where('stock', '>', 0)
+                ->latest()
+                ->limit(4)
+                ->get(['id', 'name', 'price', 'description', 'material', 'category_id']);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Kết hợp intent gate + retrieval → trả về chuỗi context hoặc null.
+     * Null nghĩa là không inject sản phẩm (câu hỏi về chính sách, hội thoại thường).
+     */
+    private function getProductContext(string $message): ?string
+    {
+        if (!$this->hasProductIntent($message)) {
+            return null;
+        }
+
+        $products = $this->getRelevantProducts($message);
+
+        if ($products->isEmpty()) {
+            return null;
+        }
+
+        return $products->map(function ($p) {
+            $price    = number_format($p->price);
+            $category = $p->category?->name ?? '';
+            $material = $p->material ? " | Chất liệu: {$p->material}" : '';
+
+            // Cắt description tối đa $descMaxLen ký tự để tránh prompt phình
+            $desc = mb_strlen($p->description) > $this->descMaxLen
+                ? mb_substr($p->description, 0, $this->descMaxLen) . '…'
+                : $p->description;
+
+            return "• {$p->name} ({$category}{$material}): {$price} VNĐ — {$desc}";
+        })->implode("\n");
     }
 }

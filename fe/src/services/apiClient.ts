@@ -35,6 +35,14 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Khi gửi FormData (upload file), phải xóa Content-Type để browser
+  // tự set "multipart/form-data; boundary=..." với đúng boundary.
+  // Nếu giữ nguyên 'application/json', server sẽ không parse được file.
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+
   return config;
 });
 
