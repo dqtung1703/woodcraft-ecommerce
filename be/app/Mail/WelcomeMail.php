@@ -29,7 +29,7 @@ class WelcomeMail extends Mailable
             with: [
                 'name'    => $this->user->name,
                 'email'   => $this->user->email,
-                'shopUrl' => config('app.url'),
+                'shopUrl' => rtrim(env('APP_FRONTEND_URL', config('app.url')), '/'),
             ],
         );
     }
