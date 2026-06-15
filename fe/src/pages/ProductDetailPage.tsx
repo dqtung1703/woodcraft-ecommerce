@@ -1,5 +1,5 @@
-import { ArrowLeft, CheckCircle, ChevronRight, Package, ShoppingBag } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ArrowLeft, CheckCircle, ChevronLeft, ChevronRight, Package, ShoppingBag, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ProductCard from '@/components/ui/ProductCard';
@@ -24,10 +24,16 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const discountLabel = product ? getProductDiscountLabel(product.discount) : null;
+  const gallery = useMemo(() => {
+    const allImages = product?.images?.length ? product.images : (product?.image ? [product.image] : []);
+    return [...new Set(allImages)];
+  }, [product]);
+  const lightboxIndex = lightboxImage ? gallery.indexOf(lightboxImage) : -1;
 
   useEffect(() => {
     if (!id) return;
@@ -49,6 +55,36 @@ export default function ProductDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    if (!lightboxImage) return;
+
+    const showPreviousImage = () => {
+      if (!gallery.length) return;
+      const currentIndex = lightboxIndex >= 0 ? lightboxIndex : 0;
+      setLightboxImage(gallery[(currentIndex - 1 + gallery.length) % gallery.length]);
+    };
+
+    const showNextImage = () => {
+      if (!gallery.length) return;
+      const currentIndex = lightboxIndex >= 0 ? lightboxIndex : 0;
+      setLightboxImage(gallery[(currentIndex + 1) % gallery.length]);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLightboxImage(null);
+      if (event.key === 'ArrowLeft') showPreviousImage();
+      if (event.key === 'ArrowRight') showNextImage();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [lightboxImage, gallery, lightboxIndex]);
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -68,9 +104,17 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Build gallery from images[] (detail endpoint), fallback to product.image
-  const allImages = product.images?.length ? product.images : (product.image ? [product.image] : []);
-  const gallery = [...new Set(allImages)];
+  const showPreviousImage = () => {
+    if (!gallery.length) return;
+    const currentIndex = lightboxIndex >= 0 ? lightboxIndex : 0;
+    setLightboxImage(gallery[(currentIndex - 1 + gallery.length) % gallery.length]);
+  };
+
+  const showNextImage = () => {
+    if (!gallery.length) return;
+    const currentIndex = lightboxIndex >= 0 ? lightboxIndex : 0;
+    setLightboxImage(gallery[(currentIndex + 1) % gallery.length]);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 md:px-12 py-12">
@@ -89,7 +133,17 @@ export default function ProductDetailPage() {
         <div className="space-y-4">
           <div className="aspect-square bg-surface-container-low rounded-[1.25rem] overflow-hidden">
             {selectedImage ? (
-              <img src={selectedImage} alt={product.name} className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setLightboxImage(selectedImage)}
+                className="group relative w-full h-full cursor-zoom-in"
+                aria-label="Xem ảnh sản phẩm toàn màn hình"
+              >
+                <img src={selectedImage} alt={product.name} className="w-full h-full object-cover" />
+                <span className="absolute bottom-4 right-4 rounded-full bg-black/60 px-4 py-2 text-sm font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  Xem ảnh
+                </span>
+              </button>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-on-surface-variant text-sm">
                 Chưa có ảnh
@@ -263,6 +317,65 @@ export default function ProductDetailPage() {
             ))}
           </div>
         </section>
+      )}
+
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 md:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Ảnh sản phẩm toàn màn hình"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxImage(null)}
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20"
+            aria-label="Đóng ảnh"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {gallery.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  showPreviousImage();
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20"
+                aria-label="Ảnh trước"
+              >
+                <ChevronLeft className="h-7 w-7" />
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  showNextImage();
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20"
+                aria-label="Ảnh sau"
+              >
+                <ChevronRight className="h-7 w-7" />
+              </button>
+            </>
+          )}
+
+          <img
+            src={lightboxImage}
+            alt={product.name}
+            className="max-h-[90vh] max-w-[92vw] object-contain shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          />
+
+          {gallery.length > 1 && lightboxIndex >= 0 && (
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-4 py-2 text-sm text-white">
+              {lightboxIndex + 1} / {gallery.length}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

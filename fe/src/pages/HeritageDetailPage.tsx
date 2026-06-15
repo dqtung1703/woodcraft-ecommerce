@@ -1,257 +1,207 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowDown, ArrowRight, ChevronDown, Mail, MapPin, Phone } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { ArrowDown, ArrowRight } from 'lucide-react';
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { PATHS } from '@/utils/routePaths';
 
-import heroImg     from '@/assets/heritage/hero.png';
-import macroImg    from '@/assets/heritage/macro.png';
-import villageImg  from '@/assets/heritage/village.png';
-import artisanImg  from '@/assets/heritage/artisan.png';
-import productsImg from '@/assets/heritage/products.png';
-import processImg  from '@/assets/heritage/process.png';
+const SOURCE_URL = 'https://langnghechuyenmy.vn/gioi-thieu';
+
+const images = {
+  hero: 'https://cdn6080.cdn4s1.com/media/gioi-thieu/1.webp',
+  craft: 'https://cdn6080.cdn4s1.com/media/gioi-thieu/2.webp',
+  village: 'https://cdn6080.cdn4s1.com/media/gioi-thieu/3.webp',
+  future: 'https://cdn6080.cdn4s1.com/media/gioi-thieu/4.webp',
+};
 
 const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 40 },
+  initial: { opacity: 0, y: 32 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true },
-  transition: { duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] },
+  transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] },
 });
 
-const steps = [
-  { no: '01', title: 'Chọn gỗ', desc: 'Gỗ mít, gỗ trắc hay gỗ hương được tuyển lựa kỹ, phơi khô hoàn toàn trước khi đưa vào xưởng.' },
-  { no: '02', title: 'Chọn vỏ trai', desc: 'Vỏ trai, vỏ ốc xà cừ được nhập về từ khắp nơi, chọn lọc theo độ dày, màu sắc và ánh ngũ sắc.' },
-  { no: '03', title: 'Cắt tạo hình', desc: 'Nghệ nhân dùng cưa nhỏ và đục tinh xảo cắt từng mảnh vỏ trai thành hình hoa, lá, chim, thú theo mẫu vẽ.' },
-  { no: '04', title: 'Khảm thủ công', desc: 'Từng mảnh vỏ được khảm vào nền gỗ bằng đục chạm tỉ mỉ — đòi hỏi đôi tay nghệ nhân cực kỳ khéo léo.' },
-  { no: '05', title: 'Đánh bóng hoàn thiện', desc: 'Sản phẩm được phủ sơn mài nhiều lớp, mài nhẵn, đánh bóng để lộ ra những đường khảm lấp lánh sắc màu.' },
+const milestones = [
+  {
+    label: 'Thế kỷ XI',
+    title: 'Khởi nguồn nghề khảm trai',
+    text: 'Theo tư liệu giới thiệu của làng nghề, nghề khảm trai xã Chuyên Mỹ đã có từ thế kỷ XI.',
+  },
+  {
+    label: 'Chuôn Ngọ',
+    title: 'Nơi thờ Tổ nghề',
+    text: 'Đình làng Chuôn Ngọ thờ ông Trương Công Thành, vị tướng thời Lý được suy tôn là Tổ nghề khảm trai.',
+  },
+  {
+    label: 'Những năm 1990',
+    title: 'Thời kỳ hưng thịnh',
+    text: 'Làng nghề từng phát triển mạnh với các làng cung cấp vật liệu trai, ốc, làm tranh và đồ mộc gia đình.',
+  },
+  {
+    label: '2025',
+    title: 'Hướng tới mạng lưới thủ công sáng tạo',
+    text: 'Chuyên Mỹ triển khai hồ sơ, tiêu chí và các hoạt động tôn vinh làng nghề gắn với OCOP và du lịch.',
+  },
 ];
 
-const artisans = [
-  { name: 'Nghệ nhân Nguyễn Văn Thành', title: 'Bậc thầy khảm trai 50 năm kinh nghiệm', quote: 'Mỗi đường khảm là một lời thì thầm gửi đến ngàn năm sau.' },
-  { name: 'Nghệ nhân Trần Thị Hoa',     title: 'Chuyên gia sơn mài truyền thống',       quote: 'Tôi học nghề từ cha, cha học từ ông — đây là báu vật của làng.' },
-  { name: 'Nghệ nhân Lê Đức Minh',      title: 'Thợ chạm khắc gỗ hàng đầu',            quote: 'Bàn tay chạm vào gỗ như chạm vào linh hồn của thiên nhiên.' },
+const craftStories = [
+  {
+    title: 'Khảm trai Chuyên Mỹ',
+    text: 'Những mảnh vỏ trai, vỏ ốc được chọn lọc và ghép lên nền gỗ để tạo nên tranh khảm, hoành phi, câu đối và đồ mộc gia đình có độ tinh xảo cao.',
+  },
+  {
+    title: 'Sơn mài Bối Khê',
+    text: 'Thôn Bối Khê nổi tiếng với sản phẩm sơn son thếp vàng, tượng Phật, hoành phi câu đối và các dòng bát, đĩa, lọ hoa, khay, tranh sơn xuất khẩu.',
+  },
+  {
+    title: 'Sinh kế từ nghề truyền thống',
+    text: 'Sau gần một nghìn năm thăng trầm, nghề khảm trai - sơn mài vẫn tạo việc làm cho hàng nghìn lao động tại Chuyên Mỹ và các xã lân cận.',
+  },
 ];
 
 export default function HeritageDetailPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-  const heroY       = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
-  const [activeStep, setActiveStep] = useState(0);
+  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '24%']);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
 
   return (
     <div className="bg-surface text-on-surface overflow-x-hidden">
-
-      {/* ═══ 1. HERO ═══ */}
-      <section ref={heroRef} className="relative h-screen flex items-center justify-center overflow-hidden">
+      <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden">
         <motion.div style={{ y: heroY }} className="absolute inset-0">
-          <img src={heroImg} alt="Nghệ nhân khảm trai" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-surface" />
+          <img src={images.hero} alt="Làng nghề khảm trai sơn mài Chuyên Mỹ" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/35 to-surface" />
         </motion.div>
-        <motion.div style={{ opacity: heroOpacity }} className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-          <motion.p {...fadeUp(0.2)} className="font-sans uppercase tracking-[0.4em] text-primary-container text-sm mb-6">
-            Làng Nghề Chuyên Mỹ · Phú Xuyên · Hà Nội
+
+        <motion.div style={{ opacity: heroOpacity }} className="relative z-10 mx-auto max-w-6xl px-6 py-28 md:px-12">
+          <motion.p {...fadeUp(0.1)} className="mb-6 font-sans text-sm uppercase text-primary-container">
+            Chuyên Mỹ, Phú Xuyên, Hà Nội
           </motion.p>
-          <motion.h1 {...fadeUp(0.4)} className="font-serif text-5xl md:text-7xl leading-tight mb-8 text-white drop-shadow-lg">
-            Ngàn Năm<br /><em className="text-primary-container">Khảm Trai</em><br />Việt
+          <motion.h1 {...fadeUp(0.2)} className="max-w-4xl font-serif text-5xl leading-tight text-white drop-shadow-lg md:text-7xl">
+            Khảm trai - sơn mài Chuyên Mỹ
           </motion.h1>
-          <motion.p {...fadeUp(0.6)} className="text-white/80 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed drop-shadow">
-            Nơi lưu giữ tinh hoa nghệ thuật cẩn xà cừ hơn nghìn năm văn hiến, được trao truyền qua từng thế hệ bàn tay nghệ nhân Chuyên Mỹ.
+          <motion.p {...fadeUp(0.3)} className="mt-8 max-w-2xl text-lg leading-relaxed !text-white md:text-xl">
+            Câu chuyện về làng nghề gần một nghìn năm tuổi, nơi nghề khảm trai và sơn mài tiếp tục được giữ gìn trong đời sống, sản xuất và du lịch sáng tạo.
           </motion.p>
-          <motion.div {...fadeUp(0.8)} className="flex flex-col sm:flex-row items-center justify-center gap-6">
-            <a href="#history" className="group flex items-center gap-3 bg-primary text-white font-bold px-8 py-4 rounded-full hover:bg-primary/90 transition-all duration-300 hover:scale-105 shadow-lg">
-              Khám phá di sản <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          <motion.div {...fadeUp(0.4)} className="mt-10 flex flex-col gap-4 sm:flex-row">
+            <a href="#story" className="inline-flex items-center justify-center gap-3 rounded-full bg-primary px-7 py-4 font-bold text-white shadow-lg transition hover:bg-primary/90">
+              Đọc câu chuyện <ArrowRight className="h-5 w-5" />
             </a>
-            <Link to={PATHS.PRODUCTS} className="flex items-center gap-3 border-2 border-white/70 text-white px-8 py-4 rounded-full hover:border-white hover:bg-white/10 transition-all duration-300">
-              Bộ sưu tập
+            <Link to={PATHS.PRODUCTS} className="inline-flex items-center justify-center rounded-full border border-white/70 px-7 py-4 font-medium text-white transition hover:bg-white/10">
+              Xem sản phẩm
             </Link>
           </motion.div>
         </motion.div>
-        <motion.div animate={{ y: [0, 12, 0] }} transition={{ repeat: Infinity, duration: 2 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/70">
-          <ArrowDown className="w-6 h-6" />
+
+        <motion.div animate={{ y: [0, 12, 0] }} transition={{ repeat: Infinity, duration: 2 }} className="absolute bottom-10 left-1/2 z-10 -translate-x-1/2 text-white/70">
+          <ArrowDown className="h-6 w-6" />
         </motion.div>
       </section>
 
-      {/* ═══ 2. HISTORY ═══ */}
-      <section id="history" className="py-28 px-6 md:px-16 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          <motion.div {...fadeUp(0)}>
-            <p className="font-sans uppercase tracking-[0.3em] text-primary text-xs mb-6">Hành Trình Ngàn Năm</p>
-            <h2 className="font-serif text-4xl md:text-5xl leading-tight mb-8 text-on-surface">
-              Di Sản Hơn<br /><em className="text-primary">1.000 Năm</em><br />Văn Hiến
-            </h2>
-            <div className="w-16 h-px bg-primary-container mb-8" />
-            <div className="space-y-5 text-on-surface-variant text-lg leading-relaxed">
-              <p>Làng nghề Chuyên Mỹ (Phú Xuyên, Hà Nội) từ lâu đã nổi tiếng khắp vùng Kinh Kỳ với nghề khảm trai truyền thống. Theo sử sách, cụ Tổ nghề là ngài Trương Công Thành — một vị tướng thời Lý, người đã có công truyền dạy kỹ nghệ cẩn xà cừ tinh xảo cho dân làng từ gần một thiên niên kỷ trước.</p>
-              <p>Mỗi tác phẩm từ Chuyên Mỹ không đơn thuần là đồ gỗ, mà là sự kết hợp kỳ diệu giữa thiên nhiên và bàn tay con người. Những mảnh vỏ trai, vỏ ốc được lựa chọn kỹ lưỡng, qua công đoạn mài giũa, cắt tỉa tỉ mỉ tạo nên những bức tranh lấp lánh sắc màu ngũ sắc.</p>
+      <section id="story" className="mx-auto grid max-w-7xl grid-cols-1 gap-14 px-6 py-24 md:px-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <motion.div {...fadeUp(0)}>
+          <p className="mb-5 font-sans text-xs uppercase text-primary">Tư liệu làng nghề</p>
+          <h2 className="font-serif text-4xl leading-tight text-on-surface md:text-5xl">
+            Lưu giữ nét đẹp văn hóa của dân tộc
+          </h2>
+          <div className="my-8 h-px w-16 bg-primary-container" />
+          <div className="space-y-5 text-lg leading-relaxed text-on-surface-variant">
+            <p>
+              Theo giới thiệu của làng nghề Chuyên Mỹ, nghề khảm trai tại xã đã có từ thế kỷ XI. Đình làng Chuôn Ngọ thờ ông Trương Công Thành, một vị tướng dưới triều Lý, được suy tôn là Tổ nghề vì có công dạy nghề cho dân làng.
+            </p>
+            <p>
+              Chuyên Mỹ gồm nhiều làng làm nghề khảm trai như Chuôn Thượng, Chuôn Trung, Chuôn Ngọ và Chuôn Hạ. Riêng Chuôn Ngọ là nơi có đình thờ Tổ nghề, gắn với lịch sử và bề dày làm nghề đặc sắc hơn cả.
+            </p>
+            <p>
+              Thời kỳ những năm 1990 được xem là giai đoạn hưng thịnh: có làng chuyên cung cấp vật liệu trai, ốc; có làng làm tranh; có làng làm đồ mộc gia đình như hoành phi, câu đối. Từ nghề truyền thống, nhiều nghệ nhân đã làm giàu cho bản thân và quê hương.
+            </p>
+          </div>
+        </motion.div>
+
+        <motion.div {...fadeUp(0.15)} className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <div className="aspect-[3/4] overflow-hidden rounded-lg shadow-md">
+              <img src={images.craft} alt="Sản phẩm khảm trai Chuyên Mỹ" className="h-full w-full object-cover transition duration-700 hover:scale-105" />
             </div>
-            <div className="mt-10 grid grid-cols-3 gap-6">
-              {[['1.000+', 'Năm lịch sử'], ['500+', 'Nghệ nhân'], ['50+', 'Quốc gia xuất khẩu']].map(([n, l]) => (
-                <div key={l} className="border-l-2 border-primary-container pl-4">
-                  <p className="font-serif text-3xl text-primary font-bold">{n}</p>
-                  <p className="text-on-surface-variant text-sm mt-1">{l}</p>
+            <div className="aspect-square overflow-hidden rounded-lg shadow-md">
+              <img src={images.future} alt="Trưng bày sản phẩm làng nghề Chuyên Mỹ" className="h-full w-full object-cover transition duration-700 hover:scale-105" />
+            </div>
+          </div>
+          <div className="space-y-4 pt-10">
+            <div className="aspect-square overflow-hidden rounded-lg shadow-md">
+              <img src={images.village} alt="Nghệ nhân và sản phẩm khảm trai sơn mài" className="h-full w-full object-cover transition duration-700 hover:scale-105" />
+            </div>
+            <div className="aspect-[3/4] overflow-hidden rounded-lg shadow-md">
+              <img src={images.hero} alt="Không gian làng nghề Chuyên Mỹ" className="h-full w-full object-cover transition duration-700 hover:scale-105" />
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      <section className="bg-surface-container-low px-6 py-24 md:px-12">
+        <div className="mx-auto max-w-7xl">
+          <motion.div {...fadeUp(0)} className="mb-14 max-w-3xl">
+            <p className="mb-5 font-sans text-xs uppercase text-primary">Dòng nghề nổi bật</p>
+            <h2 className="font-serif text-4xl leading-tight text-on-surface md:text-5xl">
+              Khảm trai Chuôn Ngọ và sơn mài Bối Khê
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {craftStories.map((item, index) => (
+              <motion.article key={item.title} {...fadeUp(index * 0.1)} className="rounded-lg border border-outline-variant bg-surface p-7 shadow-sm">
+                <p className="mb-4 font-serif text-2xl text-primary">{String(index + 1).padStart(2, '0')}</p>
+                <h3 className="mb-4 font-serif text-2xl text-on-surface">{item.title}</h3>
+                <p className="leading-relaxed text-on-surface-variant">{item.text}</p>
+              </motion.article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-24 md:px-12">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          <motion.div {...fadeUp(0)} className="overflow-hidden rounded-lg shadow-xl">
+            <img src={images.village} alt="Hoạt động tại làng nghề khảm trai sơn mài Chuyên Mỹ" className="h-full w-full object-cover" />
+          </motion.div>
+
+          <motion.div {...fadeUp(0.15)}>
+            <p className="mb-5 font-sans text-xs uppercase text-primary">Dấu mốc phát triển</p>
+            <div className="space-y-5">
+              {milestones.map((item) => (
+                <div key={item.title} className="grid grid-cols-[92px_1fr] gap-5 border-b border-outline-variant/60 pb-5">
+                  <p className="text-sm font-semibold uppercase text-primary">{item.label}</p>
+                  <div>
+                    <h3 className="font-serif text-2xl text-on-surface">{item.title}</h3>
+                    <p className="mt-2 leading-relaxed text-on-surface-variant">{item.text}</p>
+                  </div>
                 </div>
               ))}
             </div>
           </motion.div>
-          <motion.div {...fadeUp(0.2)} className="grid grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <div className="rounded-2xl overflow-hidden aspect-[3/4] shadow-md">
-                <img src={villageImg} alt="Làng nghề" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
-              </div>
-              <div className="rounded-2xl overflow-hidden aspect-square shadow-md">
-                <img src={macroImg} alt="Chi tiết khảm" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
-              </div>
-            </div>
-            <div className="space-y-4 pt-12">
-              <div className="rounded-2xl overflow-hidden aspect-square shadow-md">
-                <img src={processImg} alt="Quy trình" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
-              </div>
-              <div className="rounded-2xl overflow-hidden aspect-[3/4] shadow-md">
-                <img src={productsImg} alt="Sản phẩm" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
-              </div>
-            </div>
-          </motion.div>
         </div>
       </section>
 
-      {/* ═══ 3. CRAFT ART — subtle warm band ═══ */}
-      <section className="relative py-28 overflow-hidden bg-surface-container-low">
-        <div className="max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <motion.div {...fadeUp(0.2)} className="rounded-3xl overflow-hidden aspect-square shadow-xl order-2 lg:order-1">
-            <img src={macroImg} alt="Chi tiết khảm trai" className="w-full h-full object-cover" />
-          </motion.div>
-          <motion.div {...fadeUp(0)} className="order-1 lg:order-2">
-            <p className="font-sans uppercase tracking-[0.3em] text-primary text-xs mb-6">Tinh Hoa Nghệ Thuật</p>
-            <h2 className="font-serif text-4xl md:text-5xl leading-tight mb-8 text-on-surface">
-              Nghệ Thuật<br /><em className="text-primary">Khảm Trai</em><br />Truyền Thống
-            </h2>
-            <div className="w-16 h-px bg-primary-container mb-8" />
-            <div className="space-y-5 text-on-surface-variant text-lg leading-relaxed">
-              <p>Kỹ thuật khảm trai (cẩn xà cừ) là di sản độc đáo của người Việt, đạt đến đỉnh cao tinh xảo tại làng Chuyên Mỹ. Nghệ nhân phải mất nhiều năm học nghề để thành thạo từng đường chạm, từng mảnh ghép.</p>
-              <p>Ánh sáng phản chiếu qua từng mảnh vỏ trai tạo nên hiệu ứng ngũ sắc huyền ảo — một kiệt tác không thể làm giả bằng bất kỳ máy móc nào.</p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══ 4. ARTISANS ═══ */}
-      <section className="py-28 px-6 md:px-16 max-w-7xl mx-auto">
-        <motion.div {...fadeUp(0)} className="text-center mb-20">
-          <p className="font-sans uppercase tracking-[0.3em] text-primary text-xs mb-4">Những Con Người Giữ Lửa</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-on-surface">
-            Nghệ Nhân <em className="text-primary">Làng Nghề</em>
-          </h2>
-        </motion.div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {artisans.map((a, i) => (
-            <motion.div key={i} {...fadeUp(i * 0.15)}
-              className="group border border-outline-variant rounded-3xl p-8 hover:border-primary-container hover:bg-surface-container-low transition-all duration-500 shadow-sm hover:shadow-md">
-              <div className="w-20 h-20 rounded-full overflow-hidden mb-6 ring-2 ring-outline-variant group-hover:ring-primary-container transition-all">
-                <img src={artisanImg} alt={a.name} className="w-full h-full object-cover" />
-              </div>
-              <p className="text-primary text-sm font-serif italic mb-4 leading-relaxed">"{a.quote}"</p>
-              <div className="w-8 h-px bg-primary-container mb-4" />
-              <h3 className="font-serif text-on-surface font-bold mb-1">{a.name}</h3>
-              <p className="text-on-surface-variant text-sm">{a.title}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* ═══ 5. PROCESS ═══ */}
-      <section className="py-28 px-6 md:px-16 bg-surface-container">
-        <div className="max-w-7xl mx-auto">
-          <motion.div {...fadeUp(0)} className="text-center mb-20">
-            <p className="font-sans uppercase tracking-[0.3em] text-primary text-xs mb-4">Từ Bàn Tay Đến Kiệt Tác</p>
-            <h2 className="font-serif text-4xl md:text-5xl text-on-surface">
-              Quy Trình <em className="text-primary">Chế Tác</em>
-            </h2>
-          </motion.div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-            <div className="space-y-3">
-              {steps.map((s, i) => (
-                <motion.button key={i} {...fadeUp(i * 0.08)} onClick={() => setActiveStep(i)}
-                  className={`w-full text-left p-6 rounded-2xl border transition-all duration-300 ${
-                    activeStep === i
-                      ? 'border-primary bg-surface-container-lowest shadow-md'
-                      : 'border-outline-variant bg-surface hover:border-primary/40 hover:bg-surface-container-low'
-                  }`}>
-                  <div className="flex items-center gap-4">
-                    <span className={`font-serif text-2xl font-bold transition-colors ${activeStep === i ? 'text-primary' : 'text-on-surface-variant/40'}`}>
-                      {s.no}
-                    </span>
-                    <div className="flex-1">
-                      <h3 className="font-serif text-on-surface font-bold mb-1">{s.title}</h3>
-                      {activeStep === i && (
-                        <p className="text-on-surface-variant text-sm leading-relaxed mt-2">{s.desc}</p>
-                      )}
-                    </div>
-                    <ChevronDown className={`w-5 h-5 text-primary/50 transition-transform ${activeStep === i ? 'rotate-180' : ''}`} />
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-            <motion.div {...fadeUp(0.2)} className="relative rounded-3xl overflow-hidden aspect-square sticky top-32 shadow-xl">
-              <img src={processImg} alt="Quy trình chế tác" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-              <div className="absolute bottom-8 left-8">
-                <p className="text-primary-container font-sans uppercase tracking-widest text-xs">{steps[activeStep].no}</p>
-                <p className="font-serif text-white text-xl font-bold">{steps[activeStep].title}</p>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ 6. PRESERVATION CTA — cinematic image overlay ═══ */}
-      <section className="relative py-48 overflow-hidden">
-        <div className="absolute inset-0">
-          <img src={villageImg} alt="Làng nghề" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/60" />
-        </div>
-        <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
-          <motion.p {...fadeUp(0)} className="font-sans uppercase tracking-[0.3em] text-primary-container text-xs mb-6">
-            Giữ Hồn Di Sản
+      <section className="relative overflow-hidden py-32">
+        <img src={images.future} alt="Trung tâm giới thiệu và quảng bá sản phẩm OCOP Chuyên Mỹ" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-black/65" />
+        <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
+          <motion.p {...fadeUp(0)} className="mb-5 font-sans text-xs uppercase text-primary-container">
+            Hướng đi mới
           </motion.p>
-          <motion.h2 {...fadeUp(0.1)} className="font-serif text-4xl md:text-6xl leading-tight mb-8 text-white">
-            Mỗi Tác Phẩm Là<br /><em className="text-primary-container">Một Lời Hứa</em><br />Với Ngàn Năm
+          <motion.h2 {...fadeUp(0.1)} className="font-serif text-4xl leading-tight text-white md:text-6xl">
+            Làng nghề gắn với thiết kế sáng tạo, OCOP và du lịch
           </motion.h2>
-          <motion.p {...fadeUp(0.2)} className="text-white/75 text-lg leading-relaxed mb-12">
-            Khi bạn sở hữu một tác phẩm khảm trai Chuyên Mỹ, bạn không chỉ mua một món đồ đẹp — bạn đang gìn giữ và tiếp nối một nền văn hóa ngàn năm của dân tộc Việt Nam.
+          <motion.p {...fadeUp(0.2)} className="mx-auto mt-8 max-w-3xl text-lg leading-relaxed !text-white">
+            Chuyên Mỹ đang triển khai việc hoàn thiện hồ sơ, tiêu chí công nhận thành viên mạng lưới các Thành phố Thủ công sáng tạo thế giới, đồng thời phát triển không gian giới thiệu, quảng bá và bán sản phẩm OCOP của làng nghề.
           </motion.p>
-          <motion.div {...fadeUp(0.3)} className="flex justify-center">
-            <Link to={PATHS.PRODUCTS}
-              className="group flex items-center gap-3 bg-primary text-white font-bold px-8 py-4 rounded-full hover:bg-primary/90 transition-all hover:scale-105 shadow-lg">
-              Khám phá bộ sưu tập <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
+          <motion.div {...fadeUp(0.3)} className="mt-10">
+            <a href={SOURCE_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 rounded-full bg-primary px-7 py-4 font-bold text-white shadow-lg transition hover:bg-primary/90">
+              Xem nguồn tư liệu <ArrowRight className="h-5 w-5" />
+            </a>
           </motion.div>
         </div>
       </section>
 
-      {/* ═══ 7. MINI CONTACT BAR ═══ */}
-      <section className="py-16 px-6 md:px-16 bg-surface-container-highest border-t border-outline-variant/30">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-on-surface-variant text-sm">
-          <div>
-            <p className="font-serif text-on-surface text-xl mb-3 italic">Chuyên Mỹ Artisan</p>
-            <p className="leading-relaxed">Hơn 1000 năm gìn giữ và phát triển tinh hoa khảm trai, sơn mài Việt Nam.</p>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-start gap-2"><MapPin className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" /><span>Làng nghề Chuyên Mỹ, Phú Xuyên, Hà Nội</span></div>
-            <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-primary" /><a href="tel:+84988123456" className="hover:text-primary transition-colors">+84 988 123 456</a></div>
-            <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-primary" /><a href="mailto:info@chuyenmyartisan.vn" className="hover:text-primary transition-colors">info@chuyenmyartisan.vn</a></div>
-          </div>
-          <div className="flex items-center">
-            <Link to={PATHS.HOME} className="text-primary hover:text-primary/70 transition-colors font-medium">
-              ← Về trang chủ
-            </Link>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto mt-10 pt-8 border-t border-outline-variant/20 text-center text-on-surface-variant/40 text-xs">
-          © 1024–2024 Chuyên Mỹ Artisan Village · 1000 Years of Heritage
-        </div>
-      </section>
     </div>
   );
 }

@@ -24,7 +24,6 @@ return [
 
     'allowed_origins' => [
         'http://localhost:5173',
-        'https://design-manufactured-cargo-employer.trycloudflare.com',
     ],
 
     'allowed_origins_patterns' => [],
