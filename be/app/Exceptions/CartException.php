@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Exceptions/CartException.php
-// =============================================
+
 namespace App\Exceptions;
 
 class CartException extends BusinessException

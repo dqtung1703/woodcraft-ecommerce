@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/DTOs/Auth/UpdateProfileDTO.php
-// =============================================
+
 namespace App\DTOs\Auth;
 
 final readonly class UpdateProfileDTO

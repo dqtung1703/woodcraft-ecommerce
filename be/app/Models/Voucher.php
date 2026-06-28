@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Models/Voucher.php
-// =============================================
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;

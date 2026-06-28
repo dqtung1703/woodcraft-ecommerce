@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Services/OrderService.php
-// =============================================
+
 namespace App\Services;
 
 use App\DTOs\Order\PlaceOrderDTO;
@@ -217,8 +215,7 @@ final class OrderService
     /**
      * User tự hủy đơn — điểm hủy duy nhất trong hệ thống.
      * Áp dụng cho mọi payment method khi order.status = 'pending'.
-     * Fix: dùng 'cancelled' thay vì 'refunded' — chưa có giao dịch tiền thật.
-     * Fix: lockForUpdate() chống race condition với IPN handler.
+     * Dùng lockForUpdate() chống race condition với IPN handler.
      */
     public function cancelOrder(int $orderId, int $userId): Order
     {

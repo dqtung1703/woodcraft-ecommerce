@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/DTOs/Cart/AddToCartDTO.php
-// =============================================
+
 namespace App\DTOs\Cart;
 
 final readonly class AddToCartDTO

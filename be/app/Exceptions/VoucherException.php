@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Exceptions/VoucherException.php
-// =============================================
+
 namespace App\Exceptions;
 
 class VoucherException extends BusinessException

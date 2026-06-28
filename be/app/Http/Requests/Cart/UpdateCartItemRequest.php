@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Http/Requests/Cart/UpdateCartItemRequest.php
-// =============================================
+
 namespace App\Http\Requests\Cart;
 
 use Illuminate\Foundation\Http\FormRequest;

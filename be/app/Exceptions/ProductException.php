@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Exceptions/ProductException.php
-// =============================================
+
 namespace App\Exceptions;
 
 class ProductException extends BusinessException

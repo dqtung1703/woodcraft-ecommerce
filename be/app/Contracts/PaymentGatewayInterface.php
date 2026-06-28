@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Contracts/PaymentGatewayInterface.php
-// =============================================
+
 namespace App\Contracts;
 
 use App\Models\Order;
@@ -10,8 +8,8 @@ use App\Models\Order;
 interface PaymentGatewayInterface
 {
     /**
-     * Tạo payment URL để redirect user đến trang thanh toán.
-     * Phải lưu gateway_transaction_id vào payment record trước khi return URL.
+     * payment URL để redirect user đến trang thanh toán.
+     * Lưu gateway_transaction_id vào payment record trước khi return URL.
      *
      * @throws \RuntimeException Khi gateway API thất bại
      */

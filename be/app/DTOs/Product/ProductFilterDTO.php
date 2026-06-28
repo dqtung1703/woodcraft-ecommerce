@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/DTOs/Product/ProductFilterDTO.php
-// =============================================
+
 namespace App\DTOs\Product;
 
 final readonly class ProductFilterDTO

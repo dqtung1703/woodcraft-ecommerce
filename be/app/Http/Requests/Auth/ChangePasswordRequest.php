@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Http/Requests/Auth/ChangePasswordRequest.php
-// =============================================
+
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;

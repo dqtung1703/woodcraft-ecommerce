@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/DTOs/Auth/LoginDTO.php
-// =============================================
+
 namespace App\DTOs\Auth;
 
 final readonly class LoginDTO

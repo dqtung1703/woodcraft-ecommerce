@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Http/Controllers/Api/VoucherController.php
-// =============================================
+
 namespace App\Http\Controllers\Api;
 
 use App\DTOs\Voucher\CreateVoucherDTO;

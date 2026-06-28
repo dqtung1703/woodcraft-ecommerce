@@ -1,9 +1,6 @@
 <?php
 
-// =============================================
-// app/Exceptions/BusinessException.php
-// Base class cho mọi business logic exception
-// =============================================
+
 namespace App\Exceptions;
 
 use RuntimeException;

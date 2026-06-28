@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/DTOs/Voucher/CreateVoucherDTO.php
-// =============================================
+
 namespace App\DTOs\Voucher;
 
 use Illuminate\Support\Carbon;

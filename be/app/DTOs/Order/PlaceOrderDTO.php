@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/DTOs/Order/PlaceOrderDTO.php
-// =============================================
+
 namespace App\DTOs\Order;
 
 final readonly class PlaceOrderDTO

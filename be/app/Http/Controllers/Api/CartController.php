@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Http/Controllers/Api/CartController.php
-// =============================================
+
 namespace App\Http\Controllers\Api;
 
 use App\DTOs\Cart\AddToCartDTO;

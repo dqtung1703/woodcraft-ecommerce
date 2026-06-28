@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Http/Controllers/Api/OrderController.php
-// =============================================
+
 namespace App\Http\Controllers\Api;
 
 use App\DTOs\Order\PlaceOrderDTO;

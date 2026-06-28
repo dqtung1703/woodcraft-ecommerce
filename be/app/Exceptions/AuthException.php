@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Exceptions/AuthException.php
-// =============================================
+
 namespace App\Exceptions;
 
 class AuthException extends BusinessException

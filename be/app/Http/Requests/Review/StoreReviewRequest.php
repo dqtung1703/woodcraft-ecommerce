@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Http/Requests/Review/StoreReviewRequest.php
-// =============================================
+
 namespace App\Http\Requests\Review;
 
 use Illuminate\Foundation\Http\FormRequest;

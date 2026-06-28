@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/DTOs/Review/CreateReviewDTO.php
-// =============================================
+
 namespace App\DTOs\Review;
 
 final readonly class CreateReviewDTO

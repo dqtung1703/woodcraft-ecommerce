@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Http/Requests/Order/PlaceOrderRequest.php
-// =============================================
+
 namespace App\Http\Requests\Order;
 
 use Illuminate\Foundation\Http\FormRequest;

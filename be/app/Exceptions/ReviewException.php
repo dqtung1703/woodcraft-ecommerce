@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Exceptions/ReviewException.php
-// =============================================
+
 namespace App\Exceptions;
 
 class ReviewException extends BusinessException

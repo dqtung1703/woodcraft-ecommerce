@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/Exceptions/OrderException.php
-// =============================================
+
 namespace App\Exceptions;
 
 class OrderException extends BusinessException

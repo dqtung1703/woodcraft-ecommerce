@@ -1,8 +1,6 @@
 <?php
 
-// =============================================
-// app/DTOs/Product/CreateProductDTO.php
-// =============================================
+
 namespace App\DTOs\Product;
 
 use Illuminate\Http\UploadedFile;
