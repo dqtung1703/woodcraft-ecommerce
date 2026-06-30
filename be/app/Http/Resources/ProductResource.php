@@ -10,17 +10,8 @@ class ProductResource extends JsonResource
     public function toArray(Request $request): array
     {
         $discount = $this->activeDiscount(); // 1 lần duy nhất để tối ưu performance
-
-        $realPercent = 0;
-        if ($discount) {
-            $displayOriginalPrice = ($this->original_price && $this->original_price > 0)
-                ? (float) $this->original_price
-                : (float) $this->price;
-            $finalPrice = $this->final_price;
-
-            if ($displayOriginalPrice > $finalPrice) {
-                $realPercent = (int) round((($displayOriginalPrice - $finalPrice) / $displayOriginalPrice) * 100);
-            }
+        if (!$discount && $request->user('sanctum')?->isAdmin()) {
+            $discount = $this->discounts()->first();
         }
 
         return [
@@ -41,8 +32,8 @@ class ProductResource extends JsonResource
             'avg_rating'     => round((float) ($this->reviews_avg_rating ?? $this->avg_rating ?? 0), 1),
             'has_discount'   => $discount !== null,
             'discount'       => $discount ? [
-                'type'       => 'percent',
-                'value'      => $realPercent,
+                'type'       => $discount->discount_type,
+                'value'      => (float) $discount->discount_value,
                 'start_date' => $discount->start_date?->toIso8601String(),
                 'end_date'   => $discount->end_date?->toIso8601String(),
             ] : null,

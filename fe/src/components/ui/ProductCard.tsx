@@ -46,10 +46,16 @@ export default function ProductCard({ product }: Props) {
 
       <div className="flex items-center gap-2">
         <span className="text-primary font-bold">{formatCurrency(product.final_price)}</span>
-        {product.has_discount && product.original_price && (
+        {product.has_discount ? (
           <span className="text-on-surface-variant text-sm line-through">
-            {formatCurrency(product.original_price)}
+            {formatCurrency(product.price)}
           </span>
+        ) : (
+          product.original_price && product.original_price !== product.price && (
+            <span className="text-on-surface-variant text-sm line-through">
+              {formatCurrency(product.original_price)}
+            </span>
+          )
         )}
       </div>
     </Link>

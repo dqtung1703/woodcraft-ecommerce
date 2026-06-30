@@ -184,10 +184,16 @@ export default function ProductDetailPage() {
           {/* Price — giá gốc gạch ngang + giá bán nổi bật (kiểu Shopee) */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
             {/* Giá gốc gạch ngang — hiện khi khác giá bán */}
-            {product.original_price && product.original_price !== product.final_price && (
+            {product.has_discount ? (
               <span className="text-lg text-on-surface-variant line-through">
-                {formatCurrency(product.original_price)}
+                {formatCurrency(product.price)}
               </span>
+            ) : (
+              product.original_price && product.original_price !== product.price && (
+                <span className="text-lg text-on-surface-variant line-through">
+                  {formatCurrency(product.original_price)}
+                </span>
+              )
             )}
             {/* Giá bán hiện tại */}
             <span className="text-3xl font-bold text-red-600">{formatCurrency(product.final_price)}</span>
