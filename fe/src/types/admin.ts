@@ -105,6 +105,10 @@ export type ProductFormState = {
   material: string;
   newImageFiles: File[];
   keepImageUrls: string[];
+  discount_type?: string;
+  discount_value?: string;
+  discount_start_date?: string;
+  discount_end_date?: string;
 };
 
 export type PaginationMeta = {

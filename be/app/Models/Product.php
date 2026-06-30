@@ -72,9 +72,7 @@ class Product extends Model
         $discount = $this->activeDiscount();
         if (!$discount) return (float) $this->price;
 
-        $basePrice = ($this->original_price && $this->original_price > 0)
-            ? (float) $this->original_price
-            : (float) $this->price;
+        $basePrice = (float) $this->price;
 
         if ($discount->discount_type === 'percent') {
             return $basePrice * (1 - $discount->discount_value / 100);

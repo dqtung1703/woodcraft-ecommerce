@@ -11,6 +11,18 @@ class ProductResource extends JsonResource
     {
         $discount = $this->activeDiscount(); // 1 lần duy nhất để tối ưu performance
 
+        $realPercent = 0;
+        if ($discount) {
+            $displayOriginalPrice = ($this->original_price && $this->original_price > 0)
+                ? (float) $this->original_price
+                : (float) $this->price;
+            $finalPrice = $this->final_price;
+
+            if ($displayOriginalPrice > $finalPrice) {
+                $realPercent = (int) round((($displayOriginalPrice - $finalPrice) / $displayOriginalPrice) * 100);
+            }
+        }
+
         return [
             'id'             => $this->id,
             'name'           => $this->name,
@@ -29,8 +41,10 @@ class ProductResource extends JsonResource
             'avg_rating'     => round((float) ($this->reviews_avg_rating ?? $this->avg_rating ?? 0), 1),
             'has_discount'   => $discount !== null,
             'discount'       => $discount ? [
-                'type'  => $discount->discount_type,
-                'value' => (float) $discount->discount_value,
+                'type'       => 'percent',
+                'value'      => $realPercent,
+                'start_date' => $discount->start_date?->toIso8601String(),
+                'end_date'   => $discount->end_date?->toIso8601String(),
             ] : null,
         ];
     }

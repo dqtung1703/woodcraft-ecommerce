@@ -9,6 +9,11 @@ import { productService } from '@/services/productService';
 import type { ProductFormState } from '@/types/admin';
 import type { Category } from '@/types/category';
 
+const formatDateTimeLocal = (dateStr?: string) => {
+  if (!dateStr) return '';
+  return dateStr.slice(0, 16);
+};
+
 const initialForm: ProductFormState = {
   name: '',
   original_price: '',
@@ -20,6 +25,10 @@ const initialForm: ProductFormState = {
   material: '',
   newImageFiles: [],
   keepImageUrls: [],
+  discount_type: 'none',
+  discount_value: '',
+  discount_start_date: '',
+  discount_end_date: '',
 };
 
 export default function AdminProductFormPage() {
@@ -53,6 +62,10 @@ export default function AdminProductFormPage() {
           material: product.material ?? '',
           newImageFiles: [],
           keepImageUrls: product.images ?? [],
+          discount_type: product.discount && typeof product.discount === 'object' ? product.discount.type : 'none',
+          discount_value: product.discount && typeof product.discount === 'object' ? String(product.discount.value) : '',
+          discount_start_date: product.discount && typeof product.discount === 'object' ? formatDateTimeLocal(product.discount.start_date) : '',
+          discount_end_date: product.discount && typeof product.discount === 'object' ? formatDateTimeLocal(product.discount.end_date) : '',
         });
         setOriginalImageCount(product.images?.length ?? 0);
       })
@@ -84,6 +97,25 @@ export default function AdminProductFormPage() {
       return;
     }
 
+    if (form.discount_type && form.discount_type !== 'none') {
+      if (!form.discount_value || Number(form.discount_value) <= 0) {
+        toast.error('Giá trị giảm giá phải lớn hơn 0');
+        return;
+      }
+      if (form.discount_type === 'percent' && Number(form.discount_value) > 100) {
+        toast.error('Phần trăm giảm giá không được vượt quá 100%');
+        return;
+      }
+      if (!form.discount_start_date || !form.discount_end_date) {
+        toast.error('Vui lòng chọn thời gian bắt đầu và kết thúc giảm giá');
+        return;
+      }
+      if (new Date(form.discount_start_date) >= new Date(form.discount_end_date)) {
+        toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
+        return;
+      }
+    }
+
     const fd = new FormData();
     fd.append('name', form.name);
     fd.append('original_price', form.original_price);
@@ -93,6 +125,15 @@ export default function AdminProductFormPage() {
     fd.append('category_id', form.category_id);
     fd.append('description', form.description);
     fd.append('material', form.material);
+
+    if (form.discount_type) {
+      fd.append('discount_type', form.discount_type);
+      if (form.discount_type !== 'none') {
+        fd.append('discount_value', form.discount_value);
+        fd.append('discount_start_date', form.discount_start_date);
+        fd.append('discount_end_date', form.discount_end_date);
+      }
+    }
 
     if (isEdit) {
       fd.append('_method', 'PUT');
@@ -136,20 +177,50 @@ export default function AdminProductFormPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
-        <section className="rounded-lg border border-slate-200 bg-white p-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Tên sản phẩm"><input className="admin-input" value={form.name} onChange={(e) => setField('name', e.target.value)} required /></Field>
-            <Field label="Danh mục"><select className="admin-input" value={form.category_id} onChange={(e) => setField('category_id', e.target.value)} required><option value="">Chọn danh mục</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
-            <Field label="Giá gốc"><input className="admin-input" type="number" min="0" value={form.original_price} onChange={(e) => setField('original_price', e.target.value)} required /></Field>
-            <Field label="Giá vốn"><input className="admin-input" type="number" min="0" value={form.cost_price} onChange={(e) => setField('cost_price', e.target.value)} required /></Field>
-            <Field label="Giá bán"><input className="admin-input" type="number" min="0" value={form.price} onChange={(e) => setField('price', e.target.value)} required /></Field>
-            <Field label="Tồn kho"><input className="admin-input" type="number" min="0" value={form.stock} onChange={(e) => setField('stock', e.target.value)} required /></Field>
-            <Field label="Chất liệu"><input className="admin-input" value={form.material} onChange={(e) => setField('material', e.target.value)} /></Field>
-            <div className="sm:col-span-2"><Field label="Mô tả"><textarea className="admin-input min-h-32" value={form.description} onChange={(e) => setField('description', e.target.value)} /></Field></div>
-          </div>
-        </section>
+        <div className="space-y-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Tên sản phẩm"><input className="admin-input" value={form.name} onChange={(e) => setField('name', e.target.value)} required /></Field>
+              <Field label="Danh mục"><select className="admin-input" value={form.category_id} onChange={(e) => setField('category_id', e.target.value)} required><option value="">Chọn danh mục</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
+              <Field label="Giá gốc"><input className="admin-input" type="number" min="0" value={form.original_price} onChange={(e) => setField('original_price', e.target.value)} required /></Field>
+              <Field label="Giá vốn"><input className="admin-input" type="number" min="0" value={form.cost_price} onChange={(e) => setField('cost_price', e.target.value)} required /></Field>
+              <Field label="Giá bán"><input className="admin-input" type="number" min="0" value={form.price} onChange={(e) => setField('price', e.target.value)} required /></Field>
+              <Field label="Tồn kho"><input className="admin-input" type="number" min="0" value={form.stock} onChange={(e) => setField('stock', e.target.value)} required /></Field>
+              <Field label="Chất liệu"><input className="admin-input" value={form.material} onChange={(e) => setField('material', e.target.value)} /></Field>
+              <div className="sm:col-span-2"><Field label="Mô tả"><textarea className="admin-input min-h-32" value={form.description} onChange={(e) => setField('description', e.target.value)} /></Field></div>
+            </div>
+          </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <h3 className="text-sm font-semibold text-slate-950 mb-3">Chương trình giảm giá trực tiếp</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Loại giảm giá">
+                <select className="admin-input" value={form.discount_type} onChange={(e) => setField('discount_type', e.target.value)}>
+                  <option value="none">Không giảm giá</option>
+                  <option value="percent">Giảm theo phần trăm (%)</option>
+                  <option value="fixed">Giảm số tiền cố định (đ)</option>
+                </select>
+              </Field>
+              {form.discount_type !== 'none' && (
+                <Field label={form.discount_type === 'percent' ? 'Mức giảm (%)' : 'Mức giảm (VNĐ)'}>
+                  <input className="admin-input" type="number" min="0" max={form.discount_type === 'percent' ? 100 : undefined} value={form.discount_value} onChange={(e) => setField('discount_value', e.target.value)} required />
+                </Field>
+              )}
+              {form.discount_type !== 'none' && (
+                <>
+                  <Field label="Thời gian bắt đầu">
+                    <input className="admin-input" type="datetime-local" value={form.discount_start_date} onChange={(e) => setField('discount_start_date', e.target.value)} required />
+                  </Field>
+                  <Field label="Thời gian kết thúc">
+                    <input className="admin-input" type="datetime-local" value={form.discount_end_date} onChange={(e) => setField('discount_end_date', e.target.value)} required />
+                  </Field>
+                </>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <section className="rounded-lg border border-slate-200 bg-white p-5 h-fit">
           <h3 className="text-sm font-semibold text-slate-950">Ảnh sản phẩm</h3>
           <p className="mt-1 text-xs text-slate-500">Tối đa 5 ảnh.</p>
           <div className="mt-4 grid grid-cols-2 gap-3">

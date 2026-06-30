@@ -15,17 +15,22 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'           => ['required', 'string', 'max:255'],
-            'original_price' => ['required', 'numeric', 'min:0'],
-            'cost_price'     => ['nullable', 'numeric', 'min:0'],
-            'price'          => ['required', 'numeric', 'min:0', 'lte:original_price'],
-            'stock'          => ['required', 'integer', 'min:0'],
-            'category_id'    => ['required', 'integer', 'exists:categories,id'],
-            'description'    => ['nullable', 'string'],
-            'material'       => ['nullable', 'string', 'max:255'],
+            'name'                => ['required', 'string', 'max:255'],
+            'original_price'      => ['required', 'numeric', 'min:0'],
+            'cost_price'          => ['nullable', 'numeric', 'min:0'],
+            'price'               => ['required', 'numeric', 'min:0', 'lte:original_price'],
+            'stock'               => ['required', 'integer', 'min:0'],
+            'category_id'         => ['required', 'integer', 'exists:categories,id'],
+            'description'         => ['nullable', 'string'],
+            'material'            => ['nullable', 'string', 'max:255'],
             // File upload: tối đa 5 file, mỗi file 5MB
-            'images'         => ['nullable', 'array', 'max:5'],
-            'images.*'       => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images'              => ['nullable', 'array', 'max:5'],
+            'images.*'            => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            // Giảm giá sản phẩm trực tiếp
+            'discount_type'       => ['nullable', 'string', 'in:none,percent,fixed'],
+            'discount_value'      => ['required_if:discount_type,percent,fixed', 'nullable', 'numeric', 'min:0'],
+            'discount_start_date' => ['required_if:discount_type,percent,fixed', 'nullable', 'date'],
+            'discount_end_date'   => ['required_if:discount_type,percent,fixed', 'nullable', 'date', 'after:discount_start_date'],
         ];
     }
 }

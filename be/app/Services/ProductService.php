@@ -95,6 +95,8 @@ final class ProductService
                 $this->productRepository->syncImages($product, $urls);
             }
 
+            $this->syncDiscount($product, $dto);
+
             return $product->load(['category', 'images', 'discounts']);
         });
     }
@@ -138,8 +140,34 @@ final class ProductService
                 $this->productRepository->syncImages($product, array_merge($keepUrls, $newUrls));
             }
 
+            $this->syncDiscount($product, $dto);
+
             return $product->load(['category', 'images', 'discounts']);
         });
+    }
+
+    private function syncDiscount(Product $product, $dto): void
+    {
+        // Nếu không truyền discount_type trong request payload thì giữ nguyên
+        if ($dto->discountType === null) {
+            return;
+        }
+
+        if ($dto->discountType === 'none') {
+            $product->discounts()->delete();
+            return;
+        }
+
+        $product->discounts()->updateOrCreate(
+            ['product_id' => $product->id],
+            [
+                'discount_type'  => $dto->discountType,
+                'discount_value' => $dto->discountValue,
+                'start_date'     => $dto->discountStartDate,
+                'end_date'       => $dto->discountEndDate,
+                'status'         => 'active',
+            ]
+        );
     }
 
     public function delete(int $id): void

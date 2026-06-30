@@ -14,22 +14,27 @@ class UpdateProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'            => ['sometimes', 'string', 'max:255'],
-            'original_price'  => ['sometimes', 'numeric', 'min:0'],
-            'cost_price'      => ['sometimes', 'numeric', 'min:0'],
-            'price'           => ['sometimes', 'numeric', 'min:0'],
-            'stock'           => ['sometimes', 'integer', 'min:0'],
-            'category_id'     => ['sometimes', 'integer', 'exists:categories,id'],
-            'description'     => ['nullable', 'string'],
-            'material'        => ['nullable', 'string', 'max:255'],
+            'name'                => ['sometimes', 'string', 'max:255'],
+            'original_price'      => ['sometimes', 'numeric', 'min:0'],
+            'cost_price'          => ['sometimes', 'numeric', 'min:0'],
+            'price'               => ['sometimes', 'numeric', 'min:0'],
+            'stock'               => ['sometimes', 'integer', 'min:0'],
+            'category_id'         => ['sometimes', 'integer', 'exists:categories,id'],
+            'description'         => ['nullable', 'string'],
+            'material'            => ['nullable', 'string', 'max:255'],
             // Ảnh mới upload
-            'images'          => ['nullable', 'array'],
-            'images.*'        => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images'              => ['nullable', 'array'],
+            'images.*'            => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             // Ảnh cũ muốn giữ lại
-            'keep_images'     => ['nullable', 'array'],
-            'keep_images.*'   => ['string', 'url'],
+            'keep_images'         => ['nullable', 'array'],
+            'keep_images.*'       => ['string', 'url'],
             // Tín hiệu replace — khi =1 thì xử lý ảnh; khi vắng mặt thì giữ nguyên
-            'replace_images'  => ['sometimes', 'boolean'],
+            'replace_images'      => ['sometimes', 'boolean'],
+            // Giảm giá sản phẩm trực tiếp
+            'discount_type'       => ['nullable', 'string', 'in:none,percent,fixed'],
+            'discount_value'      => ['required_if:discount_type,percent,fixed', 'nullable', 'numeric', 'min:0'],
+            'discount_start_date' => ['required_if:discount_type,percent,fixed', 'nullable', 'date'],
+            'discount_end_date'   => ['required_if:discount_type,percent,fixed', 'nullable', 'date', 'after:discount_start_date'],
         ];
     }
 

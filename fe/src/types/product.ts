@@ -21,6 +21,8 @@ export type Product = {
 export type ProductDiscount = {
   type: 'percent' | 'fixed';
   value: number;
+  start_date?: string;
+  end_date?: string;
 };
 
 export type ProductDetail = Product & {
