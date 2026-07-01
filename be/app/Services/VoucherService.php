@@ -23,11 +23,11 @@ final class VoucherService
         $discountAmount = $voucher->calcDiscount($orderTotal);
 
         return [
-            'voucher_code'    => $voucher->code,
+            'code'            => $voucher->code,
             'discount_type'   => $voucher->discount_type,
             'discount_value'  => (float) $voucher->discount_value,
             'discount_amount' => round($discountAmount, 2),
-            'final_price'     => round(max(0, $orderTotal - $discountAmount), 2),
+            'final_total'     => round(max(0, $orderTotal - $discountAmount), 2),
         ];
     }
 
