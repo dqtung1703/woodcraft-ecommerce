@@ -19,15 +19,18 @@
 
 - [Tổng quan dự án](#-tổng-quan-dự-án)
 - [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
-- [Cài đặt và cấu hình](#-cài-đặt-và-cấu-hình)
+- [Cài đặt nhanh](#-cài-đặt-nhanh)
+- [Cài đặt chi tiết](#-cài-đặt-chi-tiết)
   - [1. Clone dự án](#1-clone-dự-án)
-  - [2. Cài đặt Backend (Laravel)](#2-cài-đặt-backend-laravel)
-  - [3. Cài đặt Frontend (React)](#3-cài-đặt-frontend-react)
-- [Cấu hình biến môi trường](#-cấu-hình-biến-môi-trường)
+  - [2. Cài đặt Backend](#2-cài-đặt-backend-laravel)
+  - [3. Cài đặt Frontend](#3-cài-đặt-frontend-react)
+- [Biến môi trường](#-biến-môi-trường)
 - [Chạy dự án](#-chạy-dự-án)
+- [Tài khoản mặc định](#-tài-khoản-mặc-định)
 - [Cấu trúc dự án](#-cấu-trúc-dự-án)
 - [Tính năng chính](#-tính-năng-chính)
 - [API Overview](#-api-overview)
+- [Xử lý sự cố](#-xử-lý-sự-cố)
 
 ---
 
@@ -35,42 +38,62 @@
 
 **Woodcraft** là nền tảng thương mại điện tử chuyên bán đồ gỗ và thủ công mỹ nghệ. Hệ thống bao gồm:
 
-- 🛍️ **Cửa hàng trực tuyến**: Duyệt, tìm kiếm và mua sản phẩm đồ gỗ
-- 🔐 **Xác thực**: Đăng nhập thông thường và đăng nhập qua Google OAuth
-- 💳 **Thanh toán online**: Tích hợp VNPay và MoMo (Sandbox)
-- 🤖 **Chatbot AI**: Hỗ trợ tư vấn sản phẩm qua OpenRouter API
-- 🏷️ **Voucher & Khuyến mãi**: Hệ thống mã giảm giá
-- ⭐ **Đánh giá sản phẩm**: Review và rating
-- 🔔 **Thông báo**: Hệ thống notification realtime
-- 📊 **Trang quản trị**: Dashboard cho admin quản lý đơn hàng, sản phẩm, người dùng
+- 🛍️ Cửa hàng trực tuyến: duyệt, tìm kiếm và mua sản phẩm đồ gỗ
+- 🔐 Xác thực: đăng nhập thông thường và Google OAuth
+- 💳 Thanh toán online: VNPay và MoMo (Sandbox)
+- 🤖 Chatbot AI: tư vấn sản phẩm qua OpenRouter API
+- 🏷️ Voucher & Khuyến mãi: hệ thống mã giảm giá
+- ⭐ Đánh giá sản phẩm: review và rating
+- 🔔 Thông báo: hệ thống notification
+- 📊 Trang quản trị: dashboard cho admin
 
 ---
 
 ## 🛠️ Yêu cầu hệ thống
 
-Trước khi cài đặt, hãy đảm bảo máy bạn đã cài đặt các phần mềm sau:
-
-| Phần mềm | Phiên bản tối thiểu | Ghi chú |
-|----------|---------------------|---------|
-| **PHP** | 8.3+ | Cần có extension: `pdo`, `mbstring`, `openssl`, `tokenizer` |
+| Phần mềm | Phiên bản | Ghi chú |
+|----------|-----------|---------|
+| **PHP** | 8.3+ | Cần extension: `pdo_mysql`, `mbstring`, `openssl` |
 | **Composer** | 2.x | Quản lý dependency PHP |
 | **Node.js** | 18.x+ | Kèm theo npm |
-| **MySQL** | 8.0+ | Hoặc SQLite cho môi trường dev |
+| **MySQL** | 8.0+ | Database chính |
 | **Git** | Bất kỳ | Để clone dự án |
 
-> 💡 **Khuyến nghị**: Sử dụng [Laragon](https://laragon.org/) (Windows) hoặc [Herd](https://herd.laravel.com/) để dễ dàng cài đặt môi trường PHP + MySQL.
+> 💡 Khuyến nghị dùng [Laragon](https://laragon.org/) trên Windows — tích hợp sẵn PHP, MySQL, và Apache/Nginx.
 
 ---
 
-## 🚀 Cài đặt và cấu hình
+## ⚡ Cài đặt nhanh
+
+```bash
+# 1. Clone
+git clone https://github.com/dqtung1703/woodcraft-ecommerce.git
+cd woodcraft-ecommerce
+
+# 2. Backend
+cd be
+cp .env.example .env          # Tạo file env
+# → Mở .env, điền DB_DATABASE, DB_USERNAME, DB_PASSWORD
+php artisan key:generate       # Tạo APP_KEY
+php artisan migrate --seed     # Tạo bảng + import toàn bộ dữ liệu mẫu
+php artisan storage:link       # Tạo symlink cho ảnh
+php artisan serve              # Chạy backend tại http://localhost:8000
+
+# 3. Frontend (mở terminal mới)
+cd ../fe
+cp .env.example .env           # Mặc định trỏ về localhost:8000 — không cần sửa
+npm install
+npm run dev                    # Chạy frontend tại http://localhost:5173
+```
+
+---
+
+## 📖 Cài đặt chi tiết
 
 ### 1. Clone dự án
 
 ```bash
-# Clone repository về máy
 git clone https://github.com/dqtung1703/woodcraft-ecommerce.git
-
-# Di chuyển vào thư mục dự án
 cd woodcraft-ecommerce
 ```
 
@@ -79,72 +102,52 @@ cd woodcraft-ecommerce
 ### 2. Cài đặt Backend (Laravel)
 
 ```bash
-# Di chuyển vào thư mục backend
 cd be
 ```
 
-#### 2.1. Cài đặt PHP dependencies
+#### Bước 1 — Cài PHP dependencies
 
 ```bash
 composer install
 ```
 
-#### 2.2. Tạo file cấu hình môi trường
+#### Bước 2 — Tạo file môi trường
 
 ```bash
-# Sao chép file .env mẫu
 cp .env.example .env
-
-# Tạo application key
 php artisan key:generate
 ```
 
-#### 2.3. Cấu hình cơ sở dữ liệu
+#### Bước 3 — Cấu hình database
 
-Mở file `be/.env` và chỉnh sửa thông tin kết nối database:
+Mở `be/.env`, tìm và sửa các dòng sau:
 
-**Dùng MySQL:**
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=woodcraft_ecommerce
 DB_USERNAME=root
-DB_PASSWORD=your_password
+DB_PASSWORD=
 ```
 
-**Dùng SQLite (cho môi trường phát triển nhanh):**
-```env
-DB_CONNECTION=sqlite
-# Không cần cấu hình thêm
-```
-
-#### 2.4. Import Database
-
-**Cách 1: Dùng file SQL có sẵn (khuyến nghị)**
-
-```bash
-# Đứng ở thư mục gốc dự án
-# Import file SQL vào MySQL
-mysql -u root -p woodcraft_ecommerce < woodcraft_ecommerce.sql
-```
-
-> ⚠️ Hãy tạo database `woodcraft_ecommerce` trước khi import:
+> Tạo database trước nếu chưa có:
 > ```sql
 > CREATE DATABASE woodcraft_ecommerce CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 > ```
 
-**Cách 2: Dùng migration (nếu không có file SQL)**
+#### Bước 4 — Chạy migration và seed dữ liệu
 
 ```bash
-# Chạy migration
-php artisan migrate
-
-# (Tuỳ chọn) Seed dữ liệu mẫu
-php artisan db:seed
+php artisan migrate --seed
 ```
 
-#### 2.5. Tạo symbolic link cho storage
+Lệnh này sẽ tự động:
+- ✅ Tạo toàn bộ cấu trúc bảng
+- ✅ Import **14 danh mục**, **26 sản phẩm**, **14 tài khoản**, **6 voucher**, đơn hàng, đánh giá mẫu
+- ✅ Ảnh sản phẩm đã có sẵn trong repo (không cần upload thêm)
+
+#### Bước 5 — Tạo symlink storage
 
 ```bash
 php artisan storage:link
@@ -155,88 +158,65 @@ php artisan storage:link
 ### 3. Cài đặt Frontend (React)
 
 ```bash
-# Quay lại thư mục gốc, sau đó vào thư mục frontend
 cd ../fe
-
-# Cài đặt Node.js dependencies
 npm install
-```
-
-#### 3.1. Tạo file cấu hình môi trường Frontend
-
-```bash
-# Sao chép file .env mẫu
 cp .env.example .env
 ```
 
-Mở file `fe/.env` và kiểm tra URL API:
+File `fe/.env` sau khi copy:
 
 ```env
 VITE_APP_NAME=Woodcraft Ecommerce
 VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_GOOGLE_CLIENT_ID=        # Để trống nếu không dùng đăng nhập Google
 ```
+
+> **Không cần chỉnh gì thêm** nếu backend đang chạy tại `localhost:8000`.
 
 ---
 
-## ⚙️ Cấu hình biến môi trường
+## ⚙️ Biến môi trường
 
-### Backend (`be/.env`)
+### Backend — `be/.env`
 
-| Biến | Mô tả | Ví dụ |
-|------|-------|-------|
-| `APP_NAME` | Tên ứng dụng | `Woodcraft` |
-| `APP_URL` | URL backend | `http://localhost:8000` |
-| `APP_FRONTEND_URL` | URL frontend | `http://localhost:5173` |
-| `DB_CONNECTION` | Loại database | `mysql` hoặc `sqlite` |
-| `DB_DATABASE` | Tên database | `woodcraft_ecommerce` |
-| `DB_USERNAME` | Username database | `root` |
-| `DB_PASSWORD` | Password database | _(để trống nếu không có)_ |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | _(lấy từ Google Cloud Console)_ |
-| `OPENROUTER_API_KEY` | API Key chatbot AI | _(lấy từ openrouter.ai)_ |
-| `VNPAY_TMN_CODE` | Mã VNPay | _(lấy từ VNPay sandbox)_ |
-| `VNPAY_HASH_SECRET` | Secret VNPay | _(lấy từ VNPay sandbox)_ |
-| `MOMO_PARTNER_CODE` | Partner code MoMo | _(lấy từ MoMo sandbox)_ |
-| `MOMO_ACCESS_KEY` | Access key MoMo | _(lấy từ MoMo sandbox)_ |
-| `MOMO_SECRET_KEY` | Secret key MoMo | _(lấy từ MoMo sandbox)_ |
+| Biến | Bắt buộc | Mô tả |
+|------|----------|-------|
+| `APP_KEY` | ✅ | Tự tạo bằng `php artisan key:generate` |
+| `APP_URL` | ✅ | URL backend (mặc định `http://localhost:8000`) |
+| `APP_FRONTEND_URL` | ✅ | URL frontend (mặc định `http://localhost:5173`) |
+| `DB_DATABASE` | ✅ | Tên database MySQL |
+| `DB_USERNAME` | ✅ | Username MySQL |
+| `DB_PASSWORD` | ✅ | Password MySQL |
+| `GOOGLE_CLIENT_ID` | ⚡ Tuỳ chọn | Thiếu → tắt đăng nhập Google |
+| `OPENROUTER_API_KEY` | ⚡ Tuỳ chọn | Thiếu → tắt chatbot AI |
+| `VNPAY_TMN_CODE` + `VNPAY_HASH_SECRET` | ⚡ Tuỳ chọn | Thiếu → tắt thanh toán VNPay |
+| `MOMO_PARTNER_CODE` + `MOMO_ACCESS_KEY` + `MOMO_SECRET_KEY` | ⚡ Tuỳ chọn | Thiếu → tắt thanh toán MoMo |
 
-### Frontend (`fe/.env`)
+> Các biến tuỳ chọn khi thiếu **chỉ tắt đúng tính năng đó**, các tính năng còn lại vẫn hoạt động bình thường.
 
-| Biến | Mô tả | Ví dụ |
-|------|-------|-------|
-| `VITE_APP_NAME` | Tên ứng dụng hiển thị | `Woodcraft Ecommerce` |
-| `VITE_API_BASE_URL` | Địa chỉ API backend | `http://localhost:8000/api/v1` |
+### Frontend — `fe/.env`
+
+| Biến | Bắt buộc | Mô tả |
+|------|----------|-------|
+| `VITE_API_BASE_URL` | ✅ | URL API backend |
+| `VITE_APP_NAME` | ⚡ Tuỳ chọn | Tên hiển thị trên tab trình duyệt |
+| `VITE_GOOGLE_CLIENT_ID` | ⚡ Tuỳ chọn | Thiếu → tắt nút đăng nhập Google |
 
 ---
 
 ## ▶️ Chạy dự án
 
-### Chạy Backend
-
 ```bash
+# Terminal 1 — Backend (http://localhost:8000)
 cd be
-
-# Chạy development server (port 8000)
 php artisan serve
-```
 
-Backend sẽ chạy tại: **http://localhost:8000**
-
-### Chạy Frontend
-
-Mở terminal mới:
-
-```bash
+# Terminal 2 — Frontend (http://localhost:5173)
 cd fe
-
-# Chạy development server (port 5173)
 npm run dev
 ```
 
-Frontend sẽ chạy tại: **http://localhost:5173**
-
-### (Tuỳ chọn) Chạy Queue Worker
-
-Nếu sử dụng tính năng gửi email hoặc xử lý job nền:
+### Chạy Queue Worker (nếu cần xử lý job nền)
 
 ```bash
 cd be
@@ -245,48 +225,65 @@ php artisan queue:work
 
 ---
 
+## 🔑 Tài khoản mặc định
+
+Sau khi chạy `php artisan migrate --seed`, hệ thống có sẵn các tài khoản:
+
+| Vai trò | Email | Mật khẩu |
+|---------|-------|-----------|
+| **Admin** | `admin@dogokhamtrai.vn` | `password` |
+| **Customer** | `tuan.nv@gmail.com` | `password` |
+| **Customer** | `thuy.tt@gmail.com` | `password` |
+| **Customer** | `hoan.lq@gmail.com` | `password` |
+
+---
+
 ## 📁 Cấu trúc dự án
 
 ```
 woodcraft-ecommerce/
-├── be/                          # Backend - Laravel 13
+├── be/                              # Backend — Laravel 13
 │   ├── app/
 │   │   ├── Http/
-│   │   │   ├── Controllers/     # API Controllers
-│   │   │   ├── Middleware/      # Middleware xác thực
-│   │   │   ├── Requests/        # Form Request validation
-│   │   │   ├── Resources/       # API Resource transformers
-│   │   │   └── Responses/       # Chuẩn hoá API response
-│   │   ├── Models/              # Eloquent Models
-│   │   ├── Services/            # Business logic
-│   │   └── Repositories/        # Data access layer
+│   │   │   ├── Controllers/         # API Controllers
+│   │   │   ├── Middleware/          # Middleware xác thực
+│   │   │   ├── Requests/            # Form Request validation
+│   │   │   ├── Resources/           # API Resource transformers
+│   │   │   └── Responses/           # Chuẩn hoá API response
+│   │   ├── Models/                  # Eloquent Models
+│   │   ├── Services/                # Business logic
+│   │   └── Repositories/            # Data access layer
 │   ├── database/
-│   │   ├── migrations/          # Database migrations
-│   │   └── seeders/             # Database seeders
-│   ├── routes/
-│   │   └── api.php              # Định nghĩa API routes
-│   └── .env.example             # Mẫu cấu hình môi trường
+│   │   ├── migrations/              # Cấu trúc bảng
+│   │   └── seeders/
+│   │       ├── DatabaseSeeder.php   # Entry point seeder
+│   │       ├── WoodcraftProductionSeeder.php  # ← Seeder chính
+│   │       └── data/
+│   │           └── woodcraft_production_seed.sql  # Dữ liệu mẫu
+│   ├── storage/
+│   │   └── app/public/products/     # Ảnh sản phẩm (đã có trong repo)
+│   ├── routes/api.php               # API routes
+│   └── .env.example                 # Mẫu cấu hình
 │
-├── fe/                          # Frontend - React + TypeScript
+├── fe/                              # Frontend — React + TypeScript
 │   ├── src/
-│   │   ├── components/          # Reusable UI components
-│   │   ├── pages/               # Page components
-│   │   ├── services/            # API service calls
-│   │   │   └── apiClient.ts     # Axios client cấu hình
-│   │   ├── hooks/               # Custom React hooks
-│   │   ├── contexts/            # React Context providers
-│   │   └── types/               # TypeScript type definitions
-│   ├── public/                  # Static assets
-│   └── .env.example             # Mẫu cấu hình môi trường
+│   │   ├── components/              # Reusable UI components
+│   │   ├── pages/                   # Page components
+│   │   ├── services/
+│   │   │   └── apiClient.ts         # Axios client
+│   │   ├── hooks/                   # Custom React hooks
+│   │   ├── contexts/                # React Context (Auth, Cart, Toast)
+│   │   └── types/                   # TypeScript types
+│   └── .env.example                 # Mẫu cấu hình
 │
-└── woodcraft_ecommerce.sql      # File SQL khởi tạo database
+└── woodcraft_ecommerce.sql          # SQL dump (tham khảo, không cần dùng)
 ```
 
 ---
 
 ## ✨ Tính năng chính
 
-### 👤 Người dùng (Customer)
+### 👤 Khách hàng (Customer)
 - Đăng ký / Đăng nhập bằng email hoặc Google
 - Duyệt và tìm kiếm sản phẩm theo danh mục, giá, đánh giá
 - Thêm sản phẩm vào giỏ hàng
@@ -298,61 +295,69 @@ woodcraft-ecommerce/
 
 ### 🔧 Quản trị viên (Admin)
 - Quản lý sản phẩm, danh mục, kho hàng
-- Xử lý đơn hàng và cập nhật trạng thái
-- Quản lý người dùng và phân quyền
+- Xử lý và cập nhật trạng thái đơn hàng
+- Quản lý tài khoản người dùng
 - Quản lý voucher khuyến mãi
-- Xem báo cáo doanh thu qua Dashboard
+- Dashboard báo cáo doanh thu
 
 ---
 
 ## 🔌 API Overview
 
-Base URL: `http://localhost:8000/api/v1`
+**Base URL:** `http://localhost:8000/api/v1`
 
 | Nhóm | Mô tả | Xác thực |
 |------|-------|----------|
-| `/auth/*` | Đăng ký, đăng nhập, Google OAuth | Public |
-| `/products/*` | Danh sách, chi tiết sản phẩm | Public |
-| `/categories/*` | Danh mục sản phẩm | Public |
-| `/cart/*` | Quản lý giỏ hàng | 🔒 Cần token |
-| `/orders/*` | Tạo và xem đơn hàng | 🔒 Cần token |
-| `/payments/*` | Thanh toán VNPay/MoMo | 🔒 Cần token |
-| `/reviews/*` | Đánh giá sản phẩm | 🔒 Cần token |
-| `/vouchers/*` | Kiểm tra mã giảm giá | 🔒 Cần token |
-| `/admin/*` | Quản trị hệ thống | 🔒 Admin only |
-| `/chatbot` | AI Chatbot | 🔒 Cần token |
+| `POST /auth/register` | Đăng ký tài khoản | Public |
+| `POST /auth/login` | Đăng nhập | Public |
+| `POST /auth/google` | Đăng nhập Google | Public |
+| `GET /products` | Danh sách sản phẩm | Public |
+| `GET /categories` | Danh mục | Public |
+| `GET /cart` | Xem giỏ hàng | 🔒 Token |
+| `POST /orders` | Tạo đơn hàng | 🔒 Token |
+| `POST /payments/vnpay` | Thanh toán VNPay | 🔒 Token |
+| `POST /payments/momo` | Thanh toán MoMo | 🔒 Token |
+| `GET /reviews/{product}` | Đánh giá sản phẩm | Public |
+| `POST /vouchers/check` | Kiểm tra voucher | 🔒 Token |
+| `POST /chatbot` | Chat AI | 🔒 Token |
+| `/admin/*` | Quản trị hệ thống | 🔒 Admin |
 
-> Xác thực sử dụng **Laravel Sanctum** — gửi token qua header:
+> Xác thực dùng **Laravel Sanctum** — gửi token qua header:
 > ```
 > Authorization: Bearer {your_token}
 > ```
 
 ---
 
-## 🐛 Xử lý sự cố thường gặp
+## 🐛 Xử lý sự cố
 
-**Lỗi `APP_KEY` trống:**
+**`php artisan` báo lỗi `APP_KEY` trống:**
 ```bash
-cd be && php artisan key:generate
+php artisan key:generate
 ```
 
-**Lỗi permission thư mục storage:**
+**Ảnh sản phẩm không hiển thị:**
 ```bash
-cd be && chmod -R 775 storage bootstrap/cache
+php artisan storage:link
 ```
 
-**Frontend không kết nối được API:**
-- Kiểm tra `VITE_API_BASE_URL` trong `fe/.env` trỏ đúng địa chỉ backend
-- Đảm bảo backend đang chạy tại cổng `8000`
+**Frontend báo lỗi kết nối API:**
+- Kiểm tra `VITE_API_BASE_URL` trong `fe/.env` đúng với port backend
+- Đảm bảo backend đang chạy: `php artisan serve`
 
 **Lỗi CORS:**
-- Kiểm tra `APP_FRONTEND_URL` trong `be/.env` trỏ đúng địa chỉ frontend
+- Kiểm tra `APP_FRONTEND_URL` trong `be/.env` đúng với port frontend (`http://localhost:5173`)
+
+**Seed bị lỗi foreign key:**
+```bash
+php artisan migrate:fresh --seed
+```
 
 ---
 
 ## 📄 Giấy phép
 
-Dự án này được phát triển cho mục đích học tập và nghiên cứu.
+Dự án phát triển cho mục đích học tập và nghiên cứu.
 
 ---
 
