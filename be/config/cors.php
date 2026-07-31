@@ -24,6 +24,7 @@ return [
 
     'allowed_origins' => array_values(array_filter([
         env('APP_FRONTEND_URL'),
+        'https://woodcraft-ecommerce-1i7r.vercel.app',
         'http://localhost:5173',
         'http://127.0.0.1:5173',
     ])),

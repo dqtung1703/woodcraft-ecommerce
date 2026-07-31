@@ -141,11 +141,16 @@ cd woodcraft-ecommerce
 
 #### Bước 2 — Tạo APP_KEY
 
-Chạy lệnh sau để tạo một key ngẫu nhiên:
-
 ```bash
-docker run --rm php:8.4-cli-alpine php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
+cd be
+cp .env.example .env
+php artisan key:generate --show
 ```
+
+> Nếu máy chưa có PHP, dùng lệnh thay thế:
+> ```bash
+> docker run --rm php:8.4-cli-alpine php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
+> ```
 
 Copy kết quả (dạng `base64:xxx...`), mở file `docker-compose.yml`, điền vào dòng `APP_KEY`:
 
